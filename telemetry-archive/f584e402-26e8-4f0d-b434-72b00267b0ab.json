@@ -1,0 +1,39 @@
+{
+  "run_id": "f584e402-26e8-4f0d-b434-72b00267b0ab",
+  "benchmark": "small-bugfix-go",
+  "mode": "trio",
+  "model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "eval_model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "planner_duration_s": 40,
+  "generator_duration_s": 660,
+  "evaluator_duration_s": 130,
+  "total_duration_s": 830,
+  "iterations": 3,
+  "visible_tests": {
+    "passed": 0,
+    "failed": 0,
+    "total": 0
+  },
+  "eval_tests": {
+    "passed": 0,
+    "failed": 0,
+    "total": 0
+  },
+  "evaluator_scores": {
+    "product_depth": 9,
+    "functionality": 5,
+    "code_quality": 8,
+    "test_coverage": 7
+  },
+  "verdict": "FAIL",
+  "bugs": [
+    "Cannot execute tests due to permission restrictions - functionality unverified"
+  ],
+  "timestamp": "2026-03-26T12:49:06Z"
+}

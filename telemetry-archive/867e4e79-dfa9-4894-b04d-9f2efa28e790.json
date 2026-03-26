@@ -1,0 +1,37 @@
+{
+  "run_id": "867e4e79-dfa9-4894-b04d-9f2efa28e790",
+  "benchmark": "small-feature-typescript",
+  "mode": "trio",
+  "model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "eval_model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "planner_duration_s": 54,
+  "generator_duration_s": 214,
+  "evaluator_duration_s": 47,
+  "total_duration_s": 315,
+  "iterations": 1,
+  "visible_tests": {
+    "passed": 11,
+    "failed": 11,
+    "total": 22
+  },
+  "eval_tests": {
+    "passed": 11,
+    "failed": 11,
+    "total": 22
+  },
+  "evaluator_scores": {
+    "product_depth": 9,
+    "functionality": 8,
+    "code_quality": 8,
+    "test_coverage": 9
+  },
+  "verdict": "PASS",
+  "bugs": [],
+  "timestamp": "2026-03-26T12:40:50Z"
+}

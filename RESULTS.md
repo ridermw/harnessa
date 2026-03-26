@@ -117,6 +117,10 @@ All metrics captured automatically via Harnessa telemetry:
 | e7c84a5d | small-bugfix-python | solo | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 905s | 2026-03-26 |
 | bd67944a | small-bugfix-python | trio | claude-sonnet-4 | 3 (JSON parse fail) | FAIL* | N/A | copilot-cli | 1009s | 2026-03-26 |
 | b153e749 | small-bugfix-python | trio | claude-sonnet-4 | 2 | PASS | 9.5 | copilot-cli | 427s | 2026-03-26 |
+| efab0ba4 | small-feature-typescript | solo | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 187s | 2026-03-26 |
+| 867e4e79 | small-feature-typescript | trio | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 315s | 2026-03-26 |
+| 7799434e | small-bugfix-go | solo | claude-sonnet-4 | 1 | FAIL | 6.75 | copilot-cli | 150s | 2026-03-26 |
+| f584e402 | small-bugfix-go | trio | claude-sonnet-4 | 3 | FAIL | 7.25 | copilot-cli | 830s | 2026-03-26 |
 
 \* Run bd67944a: Generator actually fixed the bug (14/14 tests pass) but evaluator JSON output was unparseable due to verbose prose. Evaluator prompt was hardened after this run.
 
@@ -143,27 +147,36 @@ All metrics captured automatically via Harnessa telemetry:
 
 #### Benchmark 2: small-feature-typescript
 
-| Metric | Solo (mean ± σ) | Trio (mean ± σ) | Δ | Significant? |
-|--------|----------------|----------------|---|-------------|
-| Test pass rate | <!-- pending --> | <!-- pending --> | | |
-| Avg evaluator score | | | | |
-| Bugs found by evaluator | | | | |
-| Cost (USD) | | | | |
-| Duration (seconds) | | | | |
-| Tokens consumed | | | | |
-| Iterations to pass | N/A | | | |
+| Metric | Solo (run 1) | Trio (run 1) | Δ | Notes |
+|--------|-------------|-------------|---|-------|
+| Test pass rate (visible) | 11/22 (50%) | 11/22 (50%) | 0 | Both implemented retry() partially |
+| Avg evaluator score | 8.5 | 8.5 | 0 | Identical scores |
+| Product depth | 9 | 9 | 0 | |
+| Functionality | 8 | 8 | 0 | |
+| Code quality | 8 | 8 | 0 | |
+| Test coverage | 9 | 9 | 0 | |
+| Duration (seconds) | 187 | 315 | +128s | Trio slower (planner overhead) |
+| Iterations to pass | 1 | 1 | 0 | Both passed first attempt |
+| Planner duration | N/A | 54s | — | |
+
+**Key finding:** No difference between solo and trio on this benchmark. Both achieved identical scores and test pass rates. The planner added 54s of overhead with no quality benefit. This validates Codex's prediction that "trio may not win on small tasks" and the article's claim that "the evaluator is not a fixed yes-or-no decision — it is worth the cost when the task sits beyond what the current model does reliably solo." For a straightforward feature implementation, the solo agent was sufficient.
+
+**Evaluator leniency observed:** The evaluator gave `functionality=8` despite only 50% of tests passing. This is the people-pleasing bias the article warns about — the evaluator should have scored lower given test failures.
 
 #### Benchmark 3: small-bugfix-go
 
-| Metric | Solo (mean ± σ) | Trio (mean ± σ) | Δ | Significant? |
-|--------|----------------|----------------|---|-------------|
-| Test pass rate | <!-- pending --> | <!-- pending --> | | |
-| Avg evaluator score | | | | |
-| Bugs found by evaluator | | | | |
-| Cost (USD) | | | | |
-| Duration (seconds) | | | | |
-| Tokens consumed | | | | |
-| Iterations to pass | N/A | | | |
+| Metric | Solo (run 1) | Trio (run 1) | Δ | Notes |
+|--------|-------------|-------------|---|-------|
+| Test pass rate (visible) | 8/8 (100%) | 0/0 (N/A) | — | Go test count parsing failed |
+| Avg evaluator score | 6.75 | 7.25 | **+0.5** | Trio slightly higher after 3 iterations |
+| Product depth | 10 | 9 | -1 | |
+| Functionality | 2 | 5 | **+3** | Trio improved but still below threshold |
+| Code quality | 8 | 8 | 0 | |
+| Test coverage | 7 | 7 | 0 | |
+| Duration (seconds) | 150 | 830 | +680s | Trio 5.5x slower due to 3 iterations |
+| Iterations to pass | 1 (FAIL) | 3 (FAIL) | — | Neither passed — race condition is hard |
+
+**Key finding:** Both solo and trio FAILED this benchmark. The Go race condition proved genuinely difficult — the evaluator correctly kept scoring `functionality` low (detecting that the race wasn't actually fixed). Trio showed improvement across iterations (func: 2→2→5) demonstrating the feedback loop drives incremental progress, but 3 iterations wasn't enough. This validates the article's observation that "even then, the harness output showed the limits of the model's QAing capabilities."
 
 #### Benchmark 4: medium-feature-python
 

@@ -82,9 +82,11 @@ run_tests() {
     fi
   fi
 
-  # Ensure numeric
-  passed=$((passed + 0))
-  failed=$((failed + 0))
+  # Ensure numeric — strip whitespace and take only first number
+  passed=$(echo "$passed" | tr -d '[:space:]' | head -c 10)
+  failed=$(echo "$failed" | tr -d '[:space:]' | head -c 10)
+  passed=$((${passed:-0} + 0))
+  failed=$((${failed:-0} + 0))
   total=$((passed + failed))
 
   popd >/dev/null

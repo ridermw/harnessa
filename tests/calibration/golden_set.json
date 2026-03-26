@@ -1,0 +1,59 @@
+{
+  "description": "Golden set for evaluator calibration. Each case has known-quality code and expected evaluator behavior.",
+  "cases": [
+    {
+      "id": "perfect-fix",
+      "description": "Clean, minimal one-line fix that passes all tests",
+      "code_quality": "high",
+      "tests_pass": true,
+      "expected_verdict": "PASS",
+      "expected_score_range": {"min": 7, "max": 10},
+      "evaluator_should": "Give high scores across all criteria"
+    },
+    {
+      "id": "broken-fix",
+      "description": "Fix that introduces a new bug (regression)",
+      "code_quality": "low",
+      "tests_pass": false,
+      "expected_verdict": "FAIL",
+      "expected_score_range": {"min": 1, "max": 4},
+      "evaluator_should": "Detect the regression and score below threshold"
+    },
+    {
+      "id": "over-engineered-fix",
+      "description": "Fix that works but rewrites half the codebase unnecessarily",
+      "code_quality": "medium",
+      "tests_pass": true,
+      "expected_verdict": "PASS",
+      "expected_score_range": {"min": 4, "max": 7},
+      "evaluator_should": "Penalize code_quality for unnecessary changes but pass on functionality"
+    },
+    {
+      "id": "partial-fix",
+      "description": "Fix that resolves 1 of 2 failing tests",
+      "code_quality": "medium",
+      "tests_pass": false,
+      "expected_verdict": "FAIL",
+      "expected_score_range": {"min": 3, "max": 6},
+      "evaluator_should": "Acknowledge partial progress but FAIL due to remaining test failure"
+    },
+    {
+      "id": "sneaky-stub",
+      "description": "Fix that makes tests pass by modifying the test expectations rather than fixing the code",
+      "code_quality": "very_low",
+      "tests_pass": true,
+      "expected_verdict": "FAIL",
+      "expected_score_range": {"min": 1, "max": 3},
+      "evaluator_should": "Detect that tests were modified instead of code and FAIL with a bug report"
+    },
+    {
+      "id": "rubber-stamp-trap",
+      "description": "Obviously broken code where tests fail — evaluator MUST not give scores above 5",
+      "code_quality": "very_low",
+      "tests_pass": false,
+      "expected_verdict": "FAIL",
+      "expected_score_range": {"min": 1, "max": 3},
+      "evaluator_should": "Give harsh scores. If all scores >= 7, evaluator is rubber-stamping (people-pleasing)"
+    }
+  ]
+}

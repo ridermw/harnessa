@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Runner scripts (`run-benchmark.sh`, `run-all-benchmarks.sh`, `analyze-results.sh`) for automated benchmark execution
+- Complete experimental results (`RESULTS.md`) with 10 benchmark runs across solo and trio modes
+- Copilot CLI skill (`/harnessa` command) — GAN-inspired 3-agent pipeline usable in any repo
+- Installation instructions (`INSTALL.md`) with per-project, global, and runner script options
+- Evaluator JSON extraction hardening (3-strategy parser: direct, brace-matching, code-block extraction)
+
 ## [0.1.0] — 2026-03-26
 
 ### Added

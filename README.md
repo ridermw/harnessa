@@ -2,6 +2,21 @@
 
 A GAN-inspired multi-agent harness framework for orchestrating AI agents that build software better together than any single agent can alone.
 
+## Quick Start
+
+### One-Command Usage (any repo)
+```bash
+# Install the skill
+mkdir -p .github/copilot/skills/harnessa
+curl -o .github/copilot/skills/harnessa/SKILL.md \
+  https://raw.githubusercontent.com/ridermw/harnessa/main/.github/copilot/skills/harnessa/SKILL.md
+
+# Run the trio on any task
+copilot -p '/harnessa Fix the authentication bug' --allow-all
+```
+
+See [INSTALL.md](INSTALL.md) for full installation options.
+
 ## What Is This?
 
 Harnessa is an open-source framework built on research from [Anthropic's harness design work](https://www.anthropic.com/engineering/harness-design-long-running-apps). It implements a three-agent architecture — **Planner**, **Generator**, **Evaluator** — where adversarial tension between the builder and the critic drives output quality far beyond what a solo agent achieves.

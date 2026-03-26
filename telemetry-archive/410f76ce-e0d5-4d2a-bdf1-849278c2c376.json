@@ -1,0 +1,42 @@
+{
+  "run_id": "410f76ce-e0d5-4d2a-bdf1-849278c2c376",
+  "benchmark": "medium-feature-fullstack",
+  "mode": "solo",
+  "model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "eval_model": {
+    "provider": "copilot-cli",
+    "model_id": "claude-sonnet-4"
+  },
+  "planner_duration_s": 0,
+  "generator_duration_s": 317,
+  "evaluator_duration_s": 65,
+  "total_duration_s": 383,
+  "iterations": 1,
+  "visible_tests": {
+    "passed": 0,
+    "failed": 1,
+    "total": 1
+  },
+  "eval_tests": {
+    "passed": 0,
+    "failed": 1,
+    "total": 1
+  },
+  "evaluator_scores": {
+    "product_depth": 8,
+    "functionality": 4,
+    "code_quality": 7,
+    "test_coverage": 6
+  },
+  "verdict": "FAIL",
+  "bugs": [
+    "WebSocket URL mismatch - tests expect '/ws' path but server doesn't configure this path",
+    "Cannot run tests due to permission issues, preventing full verification",
+    "WebSocket notification message format mismatch - tests expect 'data' property but server sends 'notification'",
+    "Missing database foreign key constraints validation in notifications table"
+  ],
+  "timestamp": "2026-03-26T13:31:09Z"
+}

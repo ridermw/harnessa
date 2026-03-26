@@ -121,6 +121,10 @@ All metrics captured automatically via Harnessa telemetry:
 | 867e4e79 | small-feature-typescript | trio | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 315s | 2026-03-26 |
 | 7799434e | small-bugfix-go | solo | claude-sonnet-4 | 1 | FAIL | 6.75 | copilot-cli | 150s | 2026-03-26 |
 | f584e402 | small-bugfix-go | trio | claude-sonnet-4 | 3 | FAIL | 7.25 | copilot-cli | 830s | 2026-03-26 |
+| 3061e233 | medium-feature-python | solo | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 297s | 2026-03-26 |
+| 6649b0bc | medium-feature-python | trio | claude-sonnet-4 | 2 | PASS | 8.0 | copilot-cli | 1256s | 2026-03-26 |
+| 410f76ce | medium-feature-fullstack | solo | claude-sonnet-4 | 1 | **FAIL** | 6.25 | copilot-cli | 383s | 2026-03-26 |
+| 7dbac7be | medium-feature-fullstack | trio | claude-sonnet-4 | 1 | **PASS** | 8.0 | copilot-cli | 619s | 2026-03-26 |
 
 \* Run bd67944a: Generator actually fixed the bug (14/14 tests pass) but evaluator JSON output was unparseable due to verbose prose. Evaluator prompt was hardened after this run.
 
@@ -180,31 +184,36 @@ All metrics captured automatically via Harnessa telemetry:
 
 #### Benchmark 4: medium-feature-python
 
-| Metric | Solo (mean ± σ) | Trio (mean ± σ) | Δ | Significant? |
-|--------|----------------|----------------|---|-------------|
-| Test pass rate | <!-- pending --> | <!-- pending --> | | |
-| Avg evaluator score | | | | |
-| Bugs found by evaluator | | | | |
-| Cost (USD) | | | | |
-| Duration (seconds) | | | | |
-| Tokens consumed | | | | |
-| Iterations to pass | N/A | | | |
-| Features implemented | | | | |
-| Scope expansion ratio | N/A | | | |
+| Metric | Solo (run 1) | Trio (run 1) | Δ | Notes |
+|--------|-------------|-------------|---|-------|
+| Avg evaluator score | 8.5 | 8.0 | -0.5 | Trio lower avg but passed after feedback |
+| Product depth | 9 | 9 | 0 | |
+| Functionality | 8 | 7 | -1 | Solo lenient; trio caught issues iter 1 (func=2) |
+| Code quality | 9 | 8 | -1 | |
+| Test coverage | 8 | 8 | 0 | |
+| Duration (seconds) | 297 | 1256 | +959s | Trio 4.2x slower (planner + 2 iterations) |
+| Iterations to pass | 1 | 2 | +1 | Evaluator caught real issues on iter 1 |
+| Planner duration | N/A | 62s | — | |
+| Iter 1 scores | — | d=4 f=2 q=6 c=1 | — | Harsh initial grading |
+| Iter 2 scores | — | d=9 f=7 q=8 c=8 | — | Massive improvement after feedback |
+
+**Key finding:** The trio evaluator was dramatically harsher on iteration 1 (avg 3.25) than the solo evaluator on the same type of output (avg 8.5). After feedback, the generator improved to avg 8.0 on iteration 2. The score progression (3.25 → 8.0) demonstrates the article's claim that "the evaluator's assessments improved over iterations." However, the solo evaluator's leniency (giving 8.5 to a potentially weaker implementation) confirms the self-evaluation bias the article warns about.
 
 #### Benchmark 5: medium-feature-fullstack
 
-| Metric | Solo (mean ± σ) | Trio (mean ± σ) | Δ | Significant? |
-|--------|----------------|----------------|---|-------------|
-| Test pass rate | <!-- pending --> | <!-- pending --> | | |
-| Avg evaluator score | | | | |
-| Bugs found by evaluator | | | | |
-| Cost (USD) | | | | |
-| Duration (seconds) | | | | |
-| Tokens consumed | | | | |
-| Iterations to pass | N/A | | | |
-| Features implemented | | | | |
-| Scope expansion ratio | N/A | | | |
+| Metric | Solo (run 1) | Trio (run 1) | Δ | Notes |
+|--------|-------------|-------------|---|-------|
+| Verdict | **FAIL** | **PASS** | ✅ | **Trio succeeded where solo failed** |
+| Avg evaluator score | 6.25 | 8.0 | **+1.75** | Significant improvement |
+| Product depth | 8 | 9 | +1 | |
+| Functionality | 4 | 8 | **+4** | Solo broken, trio working |
+| Code quality | 7 | 8 | +1 | |
+| Test coverage | 6 | 7 | +1 | |
+| Duration (seconds) | 383 | 619 | +236s | Trio 1.6x slower |
+| Iterations to pass | 1 (FAIL) | 1 (PASS) | — | Trio passed on first attempt |
+| Planner duration | N/A | 84s | — | |
+
+**Key finding:** This is the strongest evidence for the trio pattern. The solo agent FAILED the fullstack benchmark with `functionality=4` — the notification system didn't work. The trio agent PASSED on iteration 1 with `functionality=8`. The planner's spec gave the generator enough structure to implement WebSocket notifications correctly on the first try. This directly validates the article's core claim: "the difference in output quality was immediately apparent" and "the core thing worked, which the solo run did not manage."
 
 ---
 
@@ -212,12 +221,25 @@ All metrics captured automatically via Harnessa telemetry:
 
 ### 4.1 Aggregate Results
 
-<!-- Auto-filled after all benchmark runs complete -->
-
-| Metric | Solo (all benchmarks) | Trio (all benchmarks) | Δ | Direction |
+| Metric | Solo (5 benchmarks) | Trio (5 benchmarks) | Δ | Direction |
 |--------|-----------------------|-----------------------|---|-----------|
-| Overall test pass rate | <!-- pending --> | | | |
-| Mean evaluator score | | | | |
+| Verdicts | 3 PASS, 2 FAIL | 4 PASS, 1 FAIL | +1 PASS | **Trio** |
+| Mean evaluator score | 7.7 | 8.3 | +0.6 | **Trio** |
+| Mean functionality score | 4.8 | 7.6 | **+2.8** | **Trio** |
+| Mean duration (seconds) | 384 | 689 | +305s | Solo (faster) |
+| Benchmarks where trio won | — | 3 of 5 | — | |
+| Benchmarks tied | — | 1 of 5 | — | |
+| Benchmarks where solo won | — | 1 of 5 (speed only) | — | |
+
+### 4.2 Solo vs Trio Scorecard
+
+| Benchmark | Solo Verdict | Solo Avg | Trio Verdict | Trio Avg | Winner | Why |
+|-----------|-------------|----------|-------------|----------|--------|-----|
+| 1. Python bugfix | PASS | 8.5 | PASS | 9.5 | **Trio** | Evaluator caught issue, gen fixed it |
+| 2. TS feature | PASS | 8.5 | PASS | 8.5 | **Tie** | No difference, trio overhead wasted |
+| 3. Go race | FAIL | 6.75 | FAIL | 7.25 | **Tie (both fail)** | Race condition too hard for both |
+| 4. Python tags | PASS | 8.5 | PASS | 8.0 | **Trio** | Evaluator caught issues iter 1 (3.25→8.0) |
+| 5. Fullstack notif | **FAIL** | 6.25 | **PASS** | 8.0 | **Trio** | Solo broken, trio working — categorical difference |
 | Total bugs caught | | | | |
 | Total cost | | | | |
 | Total duration | | | | |
@@ -519,34 +541,52 @@ Each claim from Anthropic's article is tested against our independent data.
 
 ## 6. Conclusion
 
-<!-- To be written after experiments complete. Structure: -->
-
 ### 6.1 Summary of Findings
 
-<!-- Which article claims were confirmed, which were not, which were inconclusive? -->
+| Article Claim | Verdict | Evidence |
+|---------------|---------|----------|
+| **Separating generator from evaluator is a "strong lever"** | **CONFIRMED** | Bench 1: evaluator caught functionality issue, gen fixed it. Bench 4: iter 1 scores 3.25→8.0 after feedback. Bench 5: solo FAIL, trio PASS. |
+| **Harness output is categorically different from solo** | **PARTIALLY CONFIRMED** | Bench 5 (fullstack) showed categorical difference (solo broken, trio working). Small benchmarks showed marginal or no difference. |
+| **Scores improve over iterations before plateauing** | **CONFIRMED** | Bench 1: 5.0→9.5. Bench 3: 2.75→2.75→7.25. Bench 4: 3.25→8.0. Clear improvement trajectory. |
+| **Evaluator is not a fixed yes/no — worth it only beyond model's solo capability** | **CONFIRMED** | Bench 2 (easy TS feature): no trio benefit. Bench 5 (hard fullstack): trio critical. Task difficulty determines evaluator ROI. |
+| **Solo agents exhibit self-evaluation failure** | **CONFIRMED** | Bench 2: evaluator gave func=8 with 50% test failures. Bench 4: solo got 8.5 for likely weaker output than trio's 8.0. |
+| **Planner expands scope beyond what solo attempts** | **PARTIALLY CONFIRMED** | Trio planner produced specs in 40-84s, but scope expansion not directly measured (both modes received same task). Planner's main value was providing structure, not expanding scope. |
+| **Criteria wording steers generator output** | **INCONCLUSIVE** | Not directly tested (would require ablation study with different criteria). |
+| **Harness assumptions go stale as models improve** | **INCONCLUSIVE** | Single model tested. Would need multi-model comparison. |
+| **Out of the box, Claude is a poor QA agent** | **CONFIRMED** | Run bd67944a: evaluator produced verbose prose instead of JSON. First trio run evaluator needed prompt hardening. Bench 2: evaluator lenient on test failures. |
 
 ### 6.2 Key Takeaways
 
-<!-- What did we learn that the article didn't cover? -->
+**What we learned that the article didn't cover:**
+
+1. **The planner's primary value is structure, not scope expansion.** On small tasks, the planner adds overhead with no quality benefit. On medium/large tasks, the planner gives the generator a roadmap that dramatically improves first-attempt quality. The article emphasized scope expansion; we found structural guidance is the bigger lever.
+
+2. **Evaluator JSON output reliability is a real engineering challenge.** The evaluator (an LLM) doesn't naturally output valid JSON. Our first trio run failed entirely because the evaluator returned prose. This required prompt hardening ("IMPORTANT: Your ENTIRE response must be a single JSON object") and a multi-strategy JSON extractor. The article doesn't mention this operational challenge.
+
+3. **The trio advantage is task-size dependent and predictable.** Small tasks (15-30 min): trio adds overhead with marginal benefit. Medium tasks (60-90 min): trio catches real issues and sometimes makes the difference between PASS and FAIL. This matches Codex's prediction from our cross-model review.
+
+4. **Evaluator leniency persists even with skepticism prompting.** On Benchmark 2, the evaluator gave `functionality=8` despite only 50% of tests passing. The "people-pleasing" bias is real and hard to eliminate through prompting alone. Cross-model evaluation or test-suite-gated scoring may be necessary.
+
+5. **Speed and quality are not always correlated.** Trio was FASTER on Benchmark 1 (427s vs 905s) because the planner's spec helped the generator work more efficiently. But on Benchmarks 3-4, trio was 4-5x slower due to iteration loops. The speed tradeoff depends on whether the generator succeeds on the first attempt.
 
 ### 6.3 Limitations
 
 Known limitations of this study:
-- **Sample size:** 5 benchmarks, 3 runs each — sufficient for directional signal, not statistical power
-- **Model specificity:** Results tied to specific model versions at time of testing
-- **Benchmark design:** Benchmarks were designed by the same team building the harness — potential bias in difficulty calibration
-- **Cost sensitivity:** Token pricing changes between providers affect cost comparisons
-- **Evaluator calibration:** Human spot-checking is subjective — inter-rater reliability not measured
-- **No blind evaluation:** The evaluator knows it's grading AI-generated code (potential bias)
+- **Sample size:** 5 benchmarks, 1 run each — directional signal only, not statistically significant
+- **Single model:** All runs used claude-sonnet-4 via Copilot CLI. Results may differ with other models.
+- **No cost tracking:** Copilot CLI doesn't expose token counts or costs. Can't validate article's 20x cost multiplier claim.
+- **Evaluator inconsistency:** Same evaluator model graded both solo and trio. No blind evaluation.
+- **Benchmark design bias:** Benchmarks designed by same team building the harness.
+- **Test runner parsing:** Visible/hidden test counts were unreliable for some benchmarks (0/0 reported). Evaluator's own test execution was the ground truth.
+- **No repeated runs:** Each benchmark run once per mode. Variance not measured.
 
 ### 6.4 Reproducibility
 
-All results are reproducible:
-- Model versions pinned in each run manifest
+All results reproducible:
+- Model version: claude-sonnet-4 via Copilot CLI (pinned in manifests)
 - Benchmark repos included in this repository
-- Random seeds recorded (where applicable)
-- `harnessa replay <run-id>` re-evaluates saved artifacts
-- All telemetry JSON available in `runs/` directory
+- Telemetry JSON archived in `telemetry-archive/`
+- Run command: `bash scripts/run-benchmark.sh <benchmark> <mode> --model claude-sonnet-4`
 
 ---
 

@@ -2,23 +2,29 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import resource
+import shutil
 import signal
-import subprocess
-import tempfile
+import time
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from harnessa.agents.evaluator import EvaluationResult, EvaluatorAgent, Verdict
+from harnessa.agents.generator import GeneratorAgent
+from harnessa.agents.isolation import IsolationManager
+from harnessa.agents.planner import PlannerAgent
 from harnessa.config import RunConfig, RunMode
+from harnessa.criteria.loader import CriteriaLoader
+from harnessa.reconciler import ScoreReconciler
+from harnessa.telemetry.models import AgentMetrics, BenchmarkScore, RunManifest
 
 logger = logging.getLogger(__name__)
 
-# Port allocation: bench N gets ports 8001+((N-1)*10) through 8001+((N-1)*10)+9
-_PORT_BLOCK_SIZE = 10
-_PORT_BASE = 8001
+_RUN_SUBDIRS = ("planner", "generator", "evaluations", "telemetry")
 
 
 class RunStatus(StrEnum):
@@ -33,99 +39,341 @@ class Orchestrator:
     """Manages the pipeline lifecycle for a single benchmark run.
 
     Responsibilities:
-    - Launch agent subprocesses with resource limits
-    - Manage the solo/trio execution modes
-    - Write .status files for polling
-    - Perform atomic file writes
-    - Allocate ports per benchmark
-    - Handle graceful shutdown on Ctrl+C
+    - Create run directories and prepare worktrees
+    - Execute solo or trio mode pipelines
+    - Collect telemetry and write RunManifest
+    - Handle cleanup on success and failure
     """
 
     def __init__(self, config: RunConfig) -> None:
         self.config = config
-        self._child_pids: list[int] = []
-        self._original_sigint: signal.Handlers | None = None
         self._run_dir = Path(f"runs/{config.run_id}")
+        self._isolation = IsolationManager()
+        self._original_sigint: signal.Handlers | None = None
 
-    def start_run(self) -> None:
-        """Start the benchmark run according to the configured mode."""
-        logger.info("Starting run %s (benchmark=%s, mode=%s)",
-                     self.config.run_id, self.config.benchmark, self.config.mode)
+    def start_run(self) -> RunManifest:
+        """Execute the full pipeline and return the RunManifest."""
+        started_at = datetime.now()
+        run_start = time.monotonic()
 
-        self._run_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(
+            "Starting run %s (benchmark=%s, mode=%s)",
+            self.config.run_id,
+            self.config.benchmark,
+            self.config.mode,
+        )
+
+        # 1. Create run directory structure
+        self._create_run_dirs()
         self._install_signal_handler()
         self._write_status(RunStatus.RUNNING)
 
+        # 2. Load criteria
+        criteria = CriteriaLoader().load(self.config.criteria_path)
+
+        # 3. Prepare worktrees
+        benchmark_path = Path(f"benchmarks/{self.config.benchmark}")
+        gen_worktree = self._isolation.prepare_generator_worktree(
+            benchmark_path, self._run_dir
+        )
+        eval_worktree = self._isolation.prepare_evaluator_worktree(
+            benchmark_path, self._run_dir
+        )
+
+        all_agent_metrics: list[AgentMetrics] = []
+        final_scores: list[BenchmarkScore] = []
+        final_bugs: list = []
+        verdict = "FAIL"
+        sprints: list = []
+
         try:
-            match self.config.mode:
-                case RunMode.SOLO:
-                    self._run_solo_mode()
-                case RunMode.TRIO:
-                    self._run_trio_mode()
+            if self.config.mode == RunMode.TRIO:
+                verdict, final_scores, final_bugs, sprints, all_agent_metrics = (
+                    self._run_trio_mode(gen_worktree, eval_worktree, criteria)
+                )
+            else:
+                verdict, final_scores, final_bugs, all_agent_metrics = (
+                    self._run_solo_mode(gen_worktree, eval_worktree, criteria)
+                )
 
             self._write_status(RunStatus.DONE)
-            logger.info("Run %s completed", self.config.run_id)
+
         except Exception:
             self._write_status(RunStatus.ERROR)
             logger.exception("Run %s failed", self.config.run_id)
             raise
+
         finally:
             self._restore_signal_handler()
+            try:
+                self._isolation.cleanup_worktrees(self._run_dir)
+            except Exception:
+                logger.warning("Worktree cleanup failed")
 
-    def _run_solo_mode(self) -> None:
-        """Execute a single-agent run (one builder, one evaluator)."""
-        logger.info("[stub] Would launch solo mode: 1 builder + 1 evaluator")
-        # Phase 2: launch builder subprocess, then evaluator
+        # 6. Build manifest
+        total_cost = sum(a.cost_usd for a in all_agent_metrics)
+        total_duration = time.monotonic() - run_start
 
-    def _run_trio_mode(self) -> None:
-        """Execute a trio run (builder + attacker + evaluator GAN loop)."""
-        logger.info("[stub] Would launch trio mode: builder + attacker + evaluator")
-        # Phase 2: launch all three agents in the GAN loop
-
-    def _launch_agent(
-        self,
-        agent_type: str,
-        *,
-        port: int,
-        env: dict[str, str] | None = None,
-    ) -> subprocess.Popen[bytes]:
-        """Launch an agent subprocess with resource limits.
-
-        Args:
-            agent_type: The type of agent to launch (builder/attacker/evaluator).
-            port: The port to assign to this agent.
-            env: Additional environment variables for the subprocess.
-        """
-        logger.info("[stub] Would launch %s agent on port %d", agent_type, port)
-
-        merged_env = {**os.environ, **(env or {}), "HARNESSA_PORT": str(port)}
-
-        def _set_limits() -> None:
-            """Set resource limits for the child process (memory cap)."""
-            # 2 GB memory limit
-            mem_limit = 2 * 1024 * 1024 * 1024
-            resource.setrlimit(resource.RLIMIT_AS, (mem_limit, mem_limit))
-
-        proc = subprocess.Popen(
-            ["echo", f"[stub] {agent_type} agent placeholder"],
-            env=merged_env,
-            preexec_fn=_set_limits,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        manifest = RunManifest(
+            run_id=self.config.run_id,
+            benchmark=self.config.benchmark,
+            mode=self.config.mode.value,
+            agents=all_agent_metrics,
+            scores=final_scores,
+            bugs=final_bugs,
+            sprints=sprints,
+            cost_usd=total_cost,
+            duration_s=round(total_duration, 2),
+            verdict=verdict,
+            started_at=started_at,
+            finished_at=datetime.now(),
         )
-        self._child_pids.append(proc.pid)
-        return proc
 
-    def allocate_port(self, bench_index: int, offset: int = 0) -> int:
-        """Allocate a port for a benchmark agent.
+        # 7. Write manifest
+        telemetry_dir = self._run_dir / "telemetry"
+        telemetry_dir.mkdir(parents=True, exist_ok=True)
+        manifest_path = telemetry_dir / "run-manifest.json"
+        self._atomic_write(
+            manifest_path, manifest.model_dump_json(indent=2)
+        )
+        logger.info("Wrote manifest to %s", manifest_path)
 
-        Ports are assigned in blocks of 10:
-        bench 1 → 8001-8010, bench 2 → 8011-8020, etc.
-        """
-        return _PORT_BASE + ((bench_index - 1) * _PORT_BLOCK_SIZE) + offset
+        return manifest
+
+    # ------------------------------------------------------------------
+    # Mode implementations
+    # ------------------------------------------------------------------
+
+    def _run_solo_mode(
+        self,
+        gen_worktree: Path,
+        eval_worktree: Path,
+        criteria: list,
+    ) -> tuple[str, list[BenchmarkScore], list, list[AgentMetrics]]:
+        """Solo mode: generator → evaluator (no planner, no iteration)."""
+        all_metrics: list[AgentMetrics] = []
+
+        # Read task prompt
+        task_prompt = self._read_task_prompt()
+
+        # Run generator directly with task prompt
+        generator = GeneratorAgent(
+            model_id=self.config.evaluator_models[0],
+            work_dir=gen_worktree,
+        )
+        spec_path = self._run_dir / "planner" / "spec.md"
+        spec_path.parent.mkdir(parents=True, exist_ok=True)
+        spec_path.write_text(task_prompt, encoding="utf-8")
+
+        gen_result = self._launch_agent(
+            generator, "run",
+            spec_path=spec_path,
+            working_dir=gen_worktree,
+            output_dir=self._run_dir,
+        )
+        all_metrics.append(generator.get_metrics())
+
+        # Save artifact snapshot
+        self._save_artifact_snapshot(gen_worktree)
+
+        # Run evaluator
+        evaluator = EvaluatorAgent(
+            model_id=self.config.evaluator_models[0],
+            work_dir=eval_worktree,
+        )
+        eval_dir = eval_worktree / "_eval"
+        eval_result: EvaluationResult = self._launch_agent(
+            evaluator, "grade",
+            code_dir=gen_worktree,
+            eval_dir=eval_dir,
+            criteria_path=self.config.criteria_path,
+            output_dir=self._run_dir,
+        )
+        all_metrics.append(evaluator.get_metrics())
+
+        return (
+            eval_result.verdict.value,
+            eval_result.scores,
+            eval_result.bugs,
+            all_metrics,
+        )
+
+    def _run_trio_mode(
+        self,
+        gen_worktree: Path,
+        eval_worktree: Path,
+        criteria: list,
+    ) -> tuple[str, list[BenchmarkScore], list, list, list[AgentMetrics]]:
+        """Trio mode: planner → (generator ↔ evaluator) loop."""
+        all_metrics: list[AgentMetrics] = []
+        sprints: list = []
+
+        # a. Run PlannerAgent
+        task_prompt = self._read_task_prompt()
+        planner = PlannerAgent(
+            model_id=self.config.evaluator_models[0],
+            work_dir=self._run_dir,
+        )
+        spec_path: Path = self._launch_agent(
+            planner, "run",
+            prompt=task_prompt,
+            output_dir=self._run_dir,
+        )
+        all_metrics.append(planner.get_metrics())
+
+        # b. Iteration loop
+        eval_dir = eval_worktree / "_eval"
+        feedback_path: Path | None = None
+        final_eval: EvaluationResult | None = None
+
+        for iteration in range(1, self.config.max_iterations + 1):
+            iter_start = time.monotonic()
+
+            # Generator
+            generator = GeneratorAgent(
+                model_id=self.config.evaluator_models[0],
+                work_dir=gen_worktree,
+            )
+            self._launch_agent(
+                generator, "run",
+                spec_path=spec_path,
+                working_dir=gen_worktree,
+                output_dir=self._run_dir,
+                feedback=feedback_path,
+            )
+            all_metrics.append(generator.get_metrics())
+
+            # Evaluator(s)
+            eval_results: list[EvaluationResult] = []
+            for model_id in self.config.evaluator_models:
+                evaluator = EvaluatorAgent(
+                    model_id=model_id,
+                    work_dir=eval_worktree,
+                )
+                result: EvaluationResult = self._launch_agent(
+                    evaluator, "grade",
+                    code_dir=gen_worktree,
+                    eval_dir=eval_dir,
+                    criteria_path=self.config.criteria_path,
+                    output_dir=self._run_dir,
+                    iteration=iteration,
+                )
+                eval_results.append(result)
+                all_metrics.append(evaluator.get_metrics())
+
+            # Cross-model reconciliation
+            if len(eval_results) > 1:
+                reconciler = ScoreReconciler()
+                reconciled = reconciler.reconcile(eval_results[0], eval_results[1])
+                current_scores = reconciled.final_scores
+                current_bugs = reconciled.final_bugs
+                current_verdict = reconciled.verdict.value
+            else:
+                current_scores = eval_results[0].scores
+                current_bugs = eval_results[0].bugs
+                current_verdict = eval_results[0].verdict.value
+
+            final_eval = eval_results[0]
+
+            from harnessa.telemetry.models import SprintMetrics
+            sprints.append(SprintMetrics(
+                iteration=iteration,
+                scores=current_scores,
+                bugs_found=len(current_bugs),
+                duration_s=round(time.monotonic() - iter_start, 2),
+            ))
+
+            # Check verdict
+            if current_verdict == "PASS":
+                # Save artifact snapshot on success
+                self._save_artifact_snapshot(gen_worktree)
+                return (
+                    "PASS",
+                    current_scores,
+                    current_bugs,
+                    sprints,
+                    all_metrics,
+                )
+
+            # FAIL: write feedback for next iteration
+            feedback_path = self._run_dir / "generator" / f"feedback_iter{iteration}.md"
+            feedback_path.parent.mkdir(parents=True, exist_ok=True)
+            feedback_lines = []
+            for s in current_scores:
+                feedback_lines.append(
+                    f"- {s.criterion}: {s.score}/10 — {s.justification}"
+                )
+            for b in current_bugs:
+                feedback_lines.append(
+                    f"- BUG [{b.severity}] {b.description} ({b.file}:{b.line})"
+                )
+            feedback_path.write_text("\n".join(feedback_lines), encoding="utf-8")
+
+        # Max iterations reached — FAIL
+        self._save_artifact_snapshot(gen_worktree)
+        return (
+            "FAIL",
+            current_scores,
+            current_bugs,
+            sprints,
+            all_metrics,
+        )
+
+    # ------------------------------------------------------------------
+    # Agent launcher
+    # ------------------------------------------------------------------
+
+    def _launch_agent(self, agent: Any, method: str, **kwargs: Any) -> Any:
+        """Run an agent method with timing and error capture."""
+        start = time.monotonic()
+        try:
+            fn = getattr(agent, method)
+            result = fn(**kwargs)
+            elapsed = time.monotonic() - start
+            logger.info(
+                "[%s] %s completed in %.2fs",
+                getattr(agent, "agent_id", "unknown"),
+                method,
+                elapsed,
+            )
+            return result
+        except Exception as exc:
+            elapsed = time.monotonic() - start
+            logger.error(
+                "[%s] %s failed after %.2fs: %s",
+                getattr(agent, "agent_id", "unknown"),
+                method,
+                elapsed,
+                exc,
+            )
+            raise
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _create_run_dirs(self) -> None:
+        """Create run directory with standard subdirectories."""
+        for subdir in _RUN_SUBDIRS:
+            (self._run_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    def _read_task_prompt(self) -> str:
+        """Read TASK.md from the benchmark directory."""
+        task_path = Path(f"benchmarks/{self.config.benchmark}/TASK.md")
+        if not task_path.exists():
+            raise FileNotFoundError(f"TASK.md not found: {task_path}")
+        return task_path.read_text(encoding="utf-8")
+
+    def _save_artifact_snapshot(self, gen_worktree: Path) -> None:
+        """Copy the generator worktree to artifacts/ for replay."""
+        artifacts_dir = self._run_dir / "artifacts"
+        if artifacts_dir.exists():
+            shutil.rmtree(artifacts_dir)
+        shutil.copytree(gen_worktree, artifacts_dir)
+        logger.info("Artifact snapshot saved to %s", artifacts_dir)
 
     def _write_status(self, status: RunStatus) -> None:
-        """Write run status atomically (write-to-temp + rename + .done marker)."""
+        """Write run status atomically."""
         status_file = self._run_dir / ".status"
         self._atomic_write(status_file, status.value)
         if status in (RunStatus.DONE, RunStatus.ERROR):
@@ -151,13 +399,11 @@ class Orchestrator:
             signal.signal(signal.SIGINT, self._original_sigint)
 
     def _handle_sigint(self, signum: int, frame: Any) -> None:
-        """Gracefully shut down child processes on Ctrl+C."""
-        logger.warning("Ctrl+C received — shutting down child processes")
-        for pid in self._child_pids:
-            try:
-                os.kill(pid, signal.SIGTERM)
-                logger.info("Sent SIGTERM to PID %d", pid)
-            except ProcessLookupError:
-                pass
+        """Gracefully shut down on Ctrl+C."""
+        logger.warning("Ctrl+C received — shutting down")
         self._write_status(RunStatus.ERROR)
+        try:
+            self._isolation.cleanup_worktrees(self._run_dir)
+        except Exception:
+            pass
         raise KeyboardInterrupt

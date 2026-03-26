@@ -94,8 +94,39 @@ run_tests() {
 # Extract JSON from evaluator output (finds first { ... } block)
 extract_json() {
   local input="$1"
-  # Try to find JSON object in the output
-  echo "$input" | sed -n '/{/,/^}/p' | head -50
+  # Strategy 1: Try the full output as JSON directly
+  if echo "$input" | jq . >/dev/null 2>&1; then
+    echo "$input"
+    return
+  fi
+  # Strategy 2: Extract content between first { and last }
+  local extracted
+  extracted=$(echo "$input" | python3 -c "
+import sys, json
+text = sys.stdin.read()
+# Find the first { and last }
+start = text.find('{')
+end = text.rfind('}')
+if start >= 0 and end > start:
+    candidate = text[start:end+1]
+    try:
+        obj = json.loads(candidate)
+        print(json.dumps(obj))
+    except json.JSONDecodeError:
+        pass
+" 2>/dev/null)
+  if [[ -n "$extracted" ]] && echo "$extracted" | jq . >/dev/null 2>&1; then
+    echo "$extracted"
+    return
+  fi
+  # Strategy 3: Look for ```json code blocks
+  extracted=$(echo "$input" | sed -n '/```json/,/```/p' | sed '1d;$d' | head -50)
+  if [[ -n "$extracted" ]] && echo "$extracted" | jq . >/dev/null 2>&1; then
+    echo "$extracted"
+    return
+  fi
+  # Nothing found
+  echo "{}"
 }
 
 # ---------------------------------------------------------------------------
@@ -328,9 +359,10 @@ run_evaluator() {
 
   eval_start=$(date +%s)
 
-  local eval_prompt="You are a skeptical code evaluator grading an AI-generated solution. "
-  eval_prompt+="First, run the visible tests in the tests/ directory. "
-  eval_prompt+="Then, run the hidden acceptance tests in the _eval/ directory against the code. "
+  local eval_prompt="IMPORTANT: Your ENTIRE response must be a single JSON object. No text before or after it. No markdown formatting. No explanation. "
+  eval_prompt+="You are a skeptical code evaluator grading an AI-generated solution. "
+  eval_prompt+="Run the visible tests in the tests/ directory. "
+  eval_prompt+="Run the hidden acceptance tests in the _eval/ directory against the code. "
 
   if [[ -f "$WORKSPACE/package.json" ]]; then
     eval_prompt+="This is a Node.js/TypeScript project — use npm test for visible tests and npx vitest run _eval/ for hidden tests. "
@@ -346,11 +378,12 @@ run_evaluator() {
   eval_prompt+="code_quality (clean, minimal, idiomatic?), "
   eval_prompt+="test_coverage (are edge cases handled?). "
   eval_prompt+="Be harsh and objective. Any criterion below 6 means overall FAIL. "
-  eval_prompt+="Output ONLY valid JSON with this exact schema: "
+  eval_prompt+="After running tests and analyzing the code, respond with ONLY this JSON (no other text): "
   eval_prompt+='{\"scores\": {\"product_depth\": N, \"functionality\": N, \"code_quality\": N, \"test_coverage\": N}, '
-  eval_prompt+='\"verdict\": \"PASS\" or \"FAIL\", '
-  eval_prompt+='\"bugs\": [{\"description\": \"...\", \"file\": \"...\", \"severity\": \"high|medium|low\"}], '
+  eval_prompt+='\"verdict\": \"PASS\", '
+  eval_prompt+='\"bugs\": [], '
   eval_prompt+='\"justification\": \"one sentence per criterion\"}'
+  eval_prompt+=" Replace N with integer scores 1-10. Replace PASS with FAIL if any score < 6."
 
   eval_output=$(cd "$WORKSPACE" && copilot -p "$eval_prompt" \
     -s --no-ask-user --model "$EVAL_MODEL" \

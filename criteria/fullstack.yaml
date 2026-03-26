@@ -1,0 +1,60 @@
+criteria:
+  - name: Product Depth
+    weight: HIGH
+    threshold: 7
+    description: >
+      Does the implementation go beyond surface-level scaffolding?
+      Look for real business logic, edge case handling, and thoughtful
+      data modeling rather than placeholder code.
+    few_shot_examples:
+      - input: "Landing page with only static text and a single button"
+        score: 3
+        justification: "Minimal depth — no dynamic behavior or real product logic"
+      - input: "Dashboard with real-time data, filtering, user preferences, and state management"
+        score: 8
+        justification: "Rich interactive product with meaningful depth"
+
+  - name: Functionality
+    weight: HIGH
+    threshold: 6
+    description: >
+      Does the application work end-to-end across both frontend and backend?
+      Can a user complete the core workflow from the UI through to the API
+      and database without errors?
+    few_shot_examples:
+      - input: "Frontend renders but API calls fail with CORS errors"
+        score: 3
+        justification: "Integration is broken — user cannot complete any workflow"
+      - input: "Full CRUD from UI, optimistic updates, loading states, error boundaries"
+        score: 9
+        justification: "Polished end-to-end experience with good UX patterns"
+
+  - name: Visual Design
+    weight: HIGH
+    threshold: 6
+    description: >
+      Is the UI visually coherent, accessible, and well-crafted? Look for
+      consistent spacing, typography hierarchy, responsive layout, and
+      thoughtful color usage rather than default/unstyled elements.
+    few_shot_examples:
+      - input: "Unstyled HTML with browser defaults, no layout consideration"
+        score: 2
+        justification: "No design effort — raw HTML with no visual hierarchy"
+      - input: "Consistent design system, responsive grid, dark mode, accessible contrast ratios"
+        score: 9
+        justification: "Professional visual design with attention to accessibility"
+
+  - name: Code Quality
+    weight: MEDIUM
+    threshold: 5
+    description: >
+      Is the code well-structured across both frontend and backend?
+      Look for component decomposition, API separation, shared types,
+      and consistent patterns.
+    few_shot_examples:
+      - input: "Single component with API calls, state, and rendering mixed together"
+        score: 3
+        justification: "No separation of concerns — impossible to maintain"
+      - input: "Clean component tree, custom hooks, typed API client, shared validation"
+        score: 8
+        justification: "Well-architected fullstack codebase with shared contracts"

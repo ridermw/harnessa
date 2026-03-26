@@ -1,0 +1,60 @@
+criteria:
+  - name: Product Depth
+    weight: HIGH
+    threshold: 7
+    description: >
+      Does the implementation go beyond surface-level scaffolding?
+      Look for real business logic, edge case handling, and thoughtful
+      data modeling rather than placeholder code.
+    few_shot_examples:
+      - input: "Todo app with only add/remove, no persistence"
+        score: 3
+        justification: "Minimal functionality, no persistence layer, no real business logic"
+      - input: "Todo app with categories, due dates, priority sorting, SQLite persistence"
+        score: 8
+        justification: "Rich domain model with multiple features and real data persistence"
+
+  - name: Functionality
+    weight: HIGH
+    threshold: 6
+    description: >
+      Does the application actually work end-to-end? Can a user complete
+      the core workflow without errors? Test the happy path and common
+      edge cases.
+    few_shot_examples:
+      - input: "API returns 500 on valid POST request"
+        score: 2
+        justification: "Core functionality is broken — cannot complete basic workflow"
+      - input: "All CRUD endpoints work, input validation present, proper error responses"
+        score: 8
+        justification: "Solid end-to-end functionality with proper error handling"
+
+  - name: Code Quality
+    weight: MEDIUM
+    threshold: 5
+    description: >
+      Is the code well-structured, readable, and maintainable? Look for
+      separation of concerns, consistent naming, type hints, and absence
+      of obvious anti-patterns.
+    few_shot_examples:
+      - input: "Single 500-line file with no functions, global state everywhere"
+        score: 2
+        justification: "No structure, impossible to maintain or extend"
+      - input: "Clean module separation, typed interfaces, dependency injection"
+        score: 9
+        justification: "Professional-grade structure that's easy to extend"
+
+  - name: Test Coverage
+    weight: MEDIUM
+    threshold: 5
+    description: >
+      Are there meaningful tests that verify core behavior? Focus on
+      test quality over quantity — do tests catch real bugs or just
+      exercise trivial paths?
+    few_shot_examples:
+      - input: "No tests at all"
+        score: 1
+        justification: "Zero test coverage — no confidence in correctness"
+      - input: "Unit tests for business logic, integration tests for API, edge case coverage"
+        score: 8
+        justification: "Comprehensive testing strategy covering multiple levels"

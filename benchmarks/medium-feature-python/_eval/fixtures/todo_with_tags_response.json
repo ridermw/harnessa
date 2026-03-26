@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "title": "Buy groceries",
+  "description": "Milk, eggs, bread",
+  "completed": false,
+  "created_at": "2024-01-01T00:00:00",
+  "updated_at": "2024-01-01T00:00:00",
+  "tags": [
+    {"id": 1, "name": "urgent"},
+    {"id": 2, "name": "shopping"}
+  ]
+}

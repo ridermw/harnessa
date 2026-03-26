@@ -27,3 +27,7 @@ runs/*/output/
 
 # OS
 Thumbs.db
+__pycache__/
+*.pyc
+.eggs/
+*.egg-info/

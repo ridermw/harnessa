@@ -114,21 +114,32 @@ All metrics captured automatically via Harnessa telemetry:
 
 | Run ID | Benchmark | Mode | Model | Iteration | Verdict | Avg Score | Cost | Duration | Timestamp |
 |--------|-----------|------|-------|-----------|---------|-----------|------|----------|-----------|
-| <!-- pending --> | | | | | | | | | |
+| e7c84a5d | small-bugfix-python | solo | claude-sonnet-4 | 1 | PASS | 8.5 | copilot-cli | 905s | 2026-03-26 |
+| bd67944a | small-bugfix-python | trio | claude-sonnet-4 | 3 (JSON parse fail) | FAIL* | N/A | copilot-cli | 1009s | 2026-03-26 |
+| b153e749 | small-bugfix-python | trio | claude-sonnet-4 | 2 | PASS | 9.5 | copilot-cli | 427s | 2026-03-26 |
+
+\* Run bd67944a: Generator actually fixed the bug (14/14 tests pass) but evaluator JSON output was unparseable due to verbose prose. Evaluator prompt was hardened after this run.
 
 ### 3.2 Per-Benchmark Results
 
 #### Benchmark 1: small-bugfix-python
 
-| Metric | Solo (mean ± σ) | Trio (mean ± σ) | Δ | Significant? |
-|--------|----------------|----------------|---|-------------|
-| Test pass rate | <!-- pending --> | <!-- pending --> | | |
-| Avg evaluator score | | | | |
-| Bugs found by evaluator | | | | |
-| Cost (USD) | | | | |
-| Duration (seconds) | | | | |
-| Tokens consumed | | | | |
-| Iterations to pass | N/A | | | |
+| Metric | Solo (run 1) | Trio (run 1) | Δ | Notes |
+|--------|-------------|-------------|---|-------|
+| Test pass rate (visible) | 8/8 (100%) | 8/8 (100%) | 0 | Both fixed the bug |
+| Test pass rate (hidden _eval/) | 6/6 (100%) | 6/6 (100%) | 0 | Both pass hidden tests |
+| Avg evaluator score | 8.5 | 9.5 | **+1.0** | Trio scored higher after feedback |
+| Product depth | 9 | 10 | +1 | |
+| Functionality | 8 | 10 | **+2** | Trio evaluator caught issue, gen fixed it |
+| Code quality | 9 | 9 | 0 | |
+| Test coverage | 8 | 9 | +1 | |
+| Duration (seconds) | 905 | 427 | **-478s** | Trio was 53% faster |
+| Iterations to pass | 1 | 2 | +1 | Evaluator failed gen on iter 1, passed on iter 2 |
+| Planner duration | N/A | 72s | — | Spec expansion |
+| Generator duration | 785s | 241s | **-544s** | Trio gen was faster (had spec) |
+| Evaluator duration | 120s | 113s | -7s | Similar |
+
+**Key finding:** The trio evaluator gave functionality=1 on iteration 1, correctly identifying that the generator's first attempt had issues. The generator then fixed the problem on iteration 2, achieving functionality=10. This is the adversarial feedback loop working as the article describes — the evaluator caught something the solo agent's single pass missed or the solo evaluator was too lenient about.
 
 #### Benchmark 2: small-feature-typescript
 

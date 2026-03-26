@@ -32,6 +32,8 @@ class DifficultyZone(StrEnum):
     TOO_EASY = "too_easy"
     IN_ZONE = "in_zone"
     TOO_HARD = "too_hard"
+    TRIO_OVERHEAD = "trio_overhead"
+    MARGINAL = "marginal"
 
 
 class ModelInfo(BaseModel):
@@ -125,6 +127,8 @@ class DifficultyAnalysis(BaseModel):
     avg_score: float = Field(ge=0.0, le=10.0)
     score_variance: float = Field(ge=0.0)
     recommendation: str = Field(default="", description="Suggested adjustment")
+    solo_avg: float | None = Field(default=None, description="Solo mode average score")
+    trio_avg: float | None = Field(default=None, description="Trio mode average score")
 
 
 class RunManifest(BaseModel):
@@ -138,8 +142,17 @@ class RunManifest(BaseModel):
     model_info: list[ModelInfo] = Field(default_factory=list)
     agents: list[AgentMetrics] = Field(default_factory=list)
     scores: list[BenchmarkScore] = Field(default_factory=list)
+    bugs: list[BugReport] = Field(default_factory=list, description="Bugs discovered during evaluation")
+    quality_trends: list[QualityTrend] = Field(
+        default_factory=list, description="Score evolution across iterations"
+    )
+    sprints: list[SprintMetrics] = Field(
+        default_factory=list, description="Per-iteration sprint metrics"
+    )
     cost_usd: float = Field(default=0.0, ge=0.0)
     duration_s: float = Field(default=0.0, ge=0.0)
+    verdict: str = Field(default="", description="Overall PASS/FAIL verdict")
     started_at: datetime = Field(default_factory=datetime.now)
     finished_at: datetime | None = Field(default=None)
+    replayed_from: str | None = Field(default=None, description="Run ID this was replayed from")
     harness_version: str = Field(default="0.1.0")

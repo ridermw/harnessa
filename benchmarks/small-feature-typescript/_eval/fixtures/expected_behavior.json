@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "description": "3 retries with default backoff",
+      "options": {"maxRetries": 3, "initialDelay": 100, "backoffMultiplier": 2},
+      "expected_delays_ms": [100, 200, 400],
+      "tolerance_pct": 10
+    },
+    {
+      "description": "max delay caps backoff",
+      "options": {"maxRetries": 5, "initialDelay": 100, "maxDelay": 300, "backoffMultiplier": 2},
+      "expected_delays_ms": [100, 200, 300, 300, 300]
+    }
+  ]
+}

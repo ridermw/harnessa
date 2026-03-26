@@ -93,6 +93,20 @@ class EvaluationResult(BaseModel):
     suspicious_approval: bool = Field(default=False)
     test_suite_result: SuiteResult | None = Field(default=None)
     regression_result: SuiteResult | None = Field(default=None)
+    refusal_detected: bool = Field(default=False)
+    refusal_recovery: str = Field(default="")
+
+
+REFUSAL_RE_PROMPT = """\
+Your previous evaluation is INVALID. Tests are FAILING but you gave all \
+scores >= 7. This is a refusal-to-be-negative failure mode.
+
+You MUST give scores below 5 for criteria that have failing tests. \
+Being generous is a failure mode. A failing test suite means the code \
+does not work — score Functionality accordingly.
+
+Re-evaluate with honest, LOW scores where warranted.
+"""
 
 
 class EvaluatorAgent(BaseAgent):
@@ -162,7 +176,7 @@ class EvaluatorAgent(BaseAgent):
 
         # Goodhart mitigations
         result.suspicious_approval = self._detect_rubber_stamp(result.scores)
-        result = self._detect_refusal_to_be_negative(result, eval_test_result)
+        result = self._handle_refusal(result, eval_test_result)
 
         # Regression = automatic FAIL
         if regression_result and regression_result.failed > 0:
@@ -458,6 +472,169 @@ class EvaluatorAgent(BaseAgent):
                 result.verdict = Verdict.FAIL
                 result.suspicious_approval = True
         return result
+
+    def _is_refusal(self, result: EvaluationResult, test_result: SuiteResult) -> bool:
+        """Check if the result shows refusal-to-be-negative pattern.
+
+        Refusal is detected when tests fail but all scores are >= 7.
+        """
+        tests_failing = (test_result.failed > 0 or test_result.errors > 0)
+        if not tests_failing or not result.scores:
+            return False
+        return all(s.score >= 7 for s in result.scores)
+
+    def _handle_refusal(
+        self, result: EvaluationResult, test_result: SuiteResult
+    ) -> EvaluationResult:
+        """Handle refusal-to-be-negative with re-prompting and fallback.
+
+        Strategy:
+        1. Detect refusal (tests fail but all scores >= 7).
+        2. First attempt: re-prompt with explicit instruction to score low.
+        3. If second attempt still shows refusal: switch to fallback grading.
+        4. Log the refusal event in telemetry.
+
+        Args:
+            result: The initial EvaluationResult.
+            test_result: The test suite result.
+
+        Returns:
+            The (possibly corrected) EvaluationResult.
+        """
+        if not self._is_refusal(result, test_result):
+            # No refusal — still run legacy detection for edge cases
+            return self._detect_refusal_to_be_negative(result, test_result)
+
+        logger.warning(
+            "[evaluator] Refusal detected: tests failing but all scores >= 7. "
+            "Re-prompting with explicit instruction."
+        )
+        result.refusal_detected = True
+
+        # First attempt: re-prompt
+        try:
+            re_prompted = self._re_prompt_for_honesty(result, test_result)
+            if not self._is_refusal(re_prompted, test_result):
+                logger.info("[evaluator] Re-prompt resolved the refusal")
+                re_prompted.refusal_detected = True
+                re_prompted.refusal_recovery = "re_prompt"
+                return re_prompted
+        except Exception:
+            logger.warning("[evaluator] Re-prompt LLM call failed")
+
+        # Second attempt failed or still shows refusal — fallback grading
+        logger.warning(
+            "[evaluator] Persistent refusal after re-prompt. "
+            "Falling back to test-suite-only grading."
+        )
+        fallback = self._fallback_grade_from_tests(test_result, result.iteration)
+        fallback.refusal_detected = True
+        fallback.refusal_recovery = "fallback"
+        fallback.verdict = Verdict.FAIL
+        return fallback
+
+    def _re_prompt_for_honesty(
+        self, result: EvaluationResult, test_result: SuiteResult
+    ) -> EvaluationResult:
+        """Re-prompt the LLM with explicit instruction to give low scores.
+
+        Sends the refusal re-prompt along with the original scores so the
+        LLM can see what it did wrong.
+        """
+        import json as _json
+
+        original_scores = _json.dumps(
+            [{"criterion": s.criterion, "score": s.score} for s in result.scores]
+        )
+        prompt = (
+            f"{REFUSAL_RE_PROMPT}\n\n"
+            f"Your previous scores were: {original_scores}\n\n"
+            f"Test results: {test_result.passed} passed, "
+            f"{test_result.failed} failed, {test_result.errors} errors\n\n"
+            f"Test output:\n{test_result.output[:1500]}"
+        )
+        response = self.call_llm(prompt)
+        return self._parse_reprompt_response(response, result, test_result)
+
+    def _parse_reprompt_response(
+        self,
+        response: CanonicalResponse,
+        original: EvaluationResult,
+        test_result: SuiteResult,
+    ) -> EvaluationResult:
+        """Parse re-prompt response, falling back to original on failure."""
+        import json as _json
+
+        try:
+            data = _json.loads(response.text)
+        except (ValueError, _json.JSONDecodeError):
+            logger.warning("[evaluator] Re-prompt response is not valid JSON")
+            return original
+
+        scores: list[BenchmarkScore] = []
+        for score_data in data.get("scores", []):
+            scores.append(BenchmarkScore(
+                criterion=score_data["criterion"],
+                score=float(score_data["score"]),
+                justification=score_data.get("justification", ""),
+            ))
+
+        if not scores:
+            return original
+
+        bugs: list[BugReport] = []
+        for bug_data in data.get("bugs", []):
+            bugs.append(BugReport(
+                id=bug_data.get("id", uuid.uuid4().hex[:8]),
+                severity=Severity(bug_data.get("severity", "medium")),
+                description=bug_data["description"],
+                file=bug_data.get("file", ""),
+                line=bug_data.get("line", 0),
+            ))
+
+        # Determine verdict conservatively
+        has_low = any(s.score < 5 for s in scores)
+        verdict = Verdict.FAIL if (test_result.failed > 0 and not has_low) else (
+            Verdict.FAIL if test_result.failed > 0 else Verdict.PASS
+        )
+
+        return EvaluationResult(
+            scores=scores,
+            bugs=bugs or original.bugs,
+            verdict=verdict,
+            iteration=original.iteration,
+            test_suite_result=test_result,
+            regression_result=original.regression_result,
+        )
+
+    def _fallback_grade_from_tests(
+        self, test_result: SuiteResult, iteration: int
+    ) -> EvaluationResult:
+        """Create a fallback grade purely from test results.
+
+        Used when re-prompting fails to resolve refusal.
+        """
+        total = test_result.passed + test_result.failed + test_result.errors
+        pass_rate = test_result.passed / max(total, 1)
+        raw_score = round(pass_rate * 10, 1)
+
+        scores = [
+            BenchmarkScore(
+                criterion="Overall",
+                score=raw_score,
+                justification=f"Fallback (refusal recovery): test pass rate "
+                              f"{pass_rate:.0%} ({test_result.passed}/{total})",
+            ),
+        ]
+
+        return EvaluationResult(
+            scores=scores,
+            bugs=[],
+            verdict=Verdict.FAIL,
+            iteration=iteration,
+            degraded_evaluation=True,
+            test_suite_result=test_result,
+        )
 
     # ------------------------------------------------------------------
     # Fallback grading

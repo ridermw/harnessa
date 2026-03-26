@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "input": ["--config=key=value"],
+      "expected": {"config": "key=value"}
+    },
+    {
+      "input": ["--url=http://example.com?a=1&b=2"],
+      "expected": {"url": "http://example.com?a=1&b=2"}
+    },
+    {
+      "input": ["--name", "alice", "--verbose"],
+      "expected": {"name": "alice", "verbose": true}
+    },
+    {
+      "input": ["--config=x=1", "--query=y=2"],
+      "expected": {"config": "x=1", "query": "y=2"}
+    },
+    {
+      "input": ["--config="],
+      "expected": {"config": ""}
+    }
+  ]
+}

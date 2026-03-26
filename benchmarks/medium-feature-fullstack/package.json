@@ -1,0 +1,17 @@
+{
+  "name": "dashboard-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && node index.js",
+    "dev:client": "cd client && npx vite",
+    "test": "jest --config tests/jest.config.js",
+    "test:eval": "jest --config _eval/jest.config.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "jest": "^29.7.0"
+  }
+}

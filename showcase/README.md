@@ -1,115 +1,76 @@
-# Code Review Dashboard
+# Harnessa Code Review Dashboard
 
-A real-time collaborative code review dashboard powered by AI trio analysis (Planner→Generator→Evaluator).
+A real-time code review dashboard showcasing the **Planner → Generator → Evaluator** trio pattern with actual code analysis heuristics.
 
 ## Features
 
-- **Real-time Analysis**: Instant feedback using Planner→Generator→Evaluator workflow
-- **Multiple Language Support**: JavaScript, TypeScript, Python, Java, C#, Go, Rust
-- **Live Activity Feed**: See team reviews as they happen via WebSocket
-- **Quality Metrics**: Comprehensive scoring and trend analysis
-- **Professional UI**: Tailwind CSS with responsive design
-- **Self-contained**: SQLite database with no external dependencies
+- **Real-time Trio Analysis**: Planner → Generator → Evaluator pipeline with live WebSocket progress
+- **Real Code Heuristics**: Detects console.log artifacts, TODO/FIXME, hardcoded secrets, missing error handling, deep nesting, magic numbers, and long functions
+- **4-Page React App**: Dashboard, New Review, Review Detail, Analytics
+- **Live Activity Feed**: WebSocket-powered real-time event stream
+- **Dark Theme**: Professional UI with Harnessa purple (#7C3AED) accent
+- **Zero Native Deps**: Uses sql.js (pure JS SQLite) — no node-gyp required
 
 ## Tech Stack
 
-- **Backend**: Express.js + TypeScript + Socket.IO + SQLite
-- **Frontend**: React 18 + Tailwind CSS (served from CDN)
-- **Database**: SQLite with better-sqlite3
-- **Real-time**: WebSocket communication
-- **AI Simulation**: Mock trio analysis workflow
+- **Server**: Express.js + Socket.IO + sql.js (pure JavaScript SQLite)
+- **Client**: React 18 + Vite + Tailwind CSS + React Router
+- **Real-time**: Socket.IO for live trio progress and activity feed
+- **Testing**: Node.js built-in test runner + API tests
 
 ## Quick Start
 
-### Option 1: Using the start script
 ```bash
-chmod +x start.sh
-./start.sh
+cd showcase
+npm install        # installs server + client deps (workspaces)
+npm run dev        # starts server (:3001) + client (:5173) concurrently
 ```
 
-### Option 2: Manual setup
+## Production Build
+
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+npm run build      # builds React client to client/dist/
+npm start          # serves API + built client on :3001
 ```
-
-### Option 3: Production build
-```bash
-# Build and run
-npm run build
-npm start
-```
-
-## Usage
-
-1. Open http://localhost:3001 in your browser
-2. Submit code for review using the form
-3. Watch real-time analysis progress
-4. View detailed results with scores, bugs, and suggestions
-5. Monitor team activity in the live feed
 
 ## API Endpoints
 
-- `POST /api/reviews` - Submit code for review
-- `GET /api/reviews` - List all reviews
-- `GET /api/reviews/:id` - Get specific review
-- `DELETE /api/reviews/:id` - Delete review
-- `GET /api/analytics/summary` - Get analytics summary
-- `GET /api/activity` - Get recent activity
-- `GET /api/health` - Health check
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/health` | Health check |
+| `POST` | `/api/reviews` | Submit code for trio analysis |
+| `GET` | `/api/reviews` | List reviews (paginated) |
+| `GET` | `/api/reviews/:id` | Single review with scores + bugs |
+| `GET` | `/api/analytics` | Aggregate stats, trends, by-language breakdown |
 
 ## WebSocket Events
 
-- `analysis:progress` - Real-time analysis progress
-- `analysis:complete` - Analysis completion notification
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `trio_phase` | server → client | Phase status update (running/done) |
+| `review_complete` | server → client | Full analysis results |
+| `activity` | server → client | Activity feed event |
 
-## Trio Analysis Workflow
+## Testing
 
-The dashboard simulates the Harnessa trio analysis:
-
-1. **Planner Phase**: Analyzes code structure and creates review plan
-2. **Generator Phase**: Identifies bugs and improvement opportunities  
-3. **Evaluator Phase**: Validates findings and assigns quality scores
-
-Each phase provides real-time progress updates via WebSocket.
-
-## Database Schema
-
-The application uses SQLite with the following tables:
-- `reviews` - Code review submissions and results
-- `activity_log` - User activity tracking
-- `quality_metrics` - Historical quality data
-- `users` - User management (for future auth)
-- `comments` - Review comments (for future collaboration)
-
-## Environment Variables
-
-- `PORT` - Server port (default: 3001)
-- `DATABASE_PATH` - SQLite database file path
-- `CLIENT_URL` - Frontend URL for CORS (default: http://localhost:3000)
+```bash
+# Start server, then run tests
+npm start &
+npm test
+```
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React SPA     │    │  Express API    │    │   Mock Trio     │
-│                 │    │                 │    │   Engine        │
-│ • Dashboard     │◄──►│ • REST API      │◄──►│ • Planner       │
-│ • Real-time UI  │    │ • WebSockets    │    │ • Generator     │
-│ • Code Editor   │    │ • Database      │    │ • Evaluator     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌─────────────────┐
-                       │   SQLite DB     │
-                       │                 │
-                       │ • Reviews       │
-                       │ • Activity      │
-                       │ • Metrics       │
-                       └─────────────────┘
+showcase/
+├── server/                   Express API + sql.js + Socket.IO
+│   ├── routes/               REST endpoints (reviews, analytics, health)
+│   ├── services/trio.js      Simulated trio with real heuristics
+│   └── websocket.js          Socket.IO broadcasting
+├── client/                   React + Vite + Tailwind
+│   └── src/
+│       ├── pages/            Dashboard, NewReview, ReviewDetail, Analytics
+│       ├── components/       Header, ScoreCard, TrioProgress, ActivityFeed, CodeEditor, BugList
+│       └── hooks/            useSocket (WebSocket hook)
+└── tests/                    API integration tests
 ```
-
-This is a complete, self-contained application that demonstrates the power of AI-driven code review with real-time collaboration features.

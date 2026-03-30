@@ -50,6 +50,40 @@ generate_uuid() {
   fi
 }
 
+package_json_script() {
+  local script_name="$1"
+  jq -r --arg script_name "$script_name" '.scripts[$script_name] // empty' package.json
+}
+
+node_test_command() {
+  local test_dir="${1:-tests}"
+  local test_script
+  local eval_script
+
+  test_script="$(package_json_script test)"
+  eval_script="$(package_json_script test:eval)"
+
+  if [[ "$test_dir" == "_eval" ]]; then
+    if [[ -n "$eval_script" ]]; then
+      echo "npm run test:eval -- --runInBand"
+    elif echo "$test_script" | grep -qi 'vitest'; then
+      echo "npx --yes vitest run _eval/"
+    elif echo "$test_script" | grep -qi 'jest' && [[ -f "_eval/jest.config.js" ]]; then
+      echo "npx jest --config _eval/jest.config.js --runInBand"
+    else
+      echo "npm test"
+    fi
+  else
+    if echo "$test_script" | grep -qi 'jest'; then
+      echo "npm test -- --runInBand"
+    elif echo "$test_script" | grep -qi 'vitest'; then
+      echo "npm test -- --reporter=verbose"
+    else
+      echo "npm test"
+    fi
+  fi
+}
+
 # Detect the test runner for a workspace directory and run tests.
 # Usage: run_tests <workspace_dir> [test_dir]
 # Prints JSON: {"passed": N, "failed": N, "total": N}
@@ -57,13 +91,15 @@ run_tests() {
   local dir="$1"
   local test_dir="${2:-tests}"
   local output
+  local test_cmd
   local passed=0 failed=0 total=0
 
   pushd "$dir" >/dev/null
 
   if [[ -f "package.json" ]]; then
-    # Node.js project — use npm test
-    output=$(npm test -- --reporter=verbose 2>&1) || true
+    # Node.js project — respect benchmark-defined visible vs hidden test commands.
+    test_cmd="$(node_test_command "$test_dir")"
+    output=$(eval "$test_cmd" 2>&1) || true
     # Parse vitest/jest output: "Tests  X passed | Y failed"
     passed=$(echo "$output" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "0")
     failed=$(echo "$output" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo "0")
@@ -355,6 +391,7 @@ run_evaluator() {
   log "Running evaluator..."
 
   local eval_start eval_end eval_output eval_json
+  local visible_test_cmd hidden_test_cmd
 
   # Temporarily copy _eval/ into workspace for the evaluator
   cp -R "$EVAL_DIR" "$WORKSPACE/_eval" 2>/dev/null || true
@@ -367,7 +404,9 @@ run_evaluator() {
   eval_prompt+="Run the hidden acceptance tests in the _eval/ directory against the code. "
 
   if [[ -f "$WORKSPACE/package.json" ]]; then
-    eval_prompt+="This is a Node.js/TypeScript project — use npm test for visible tests and npx vitest run _eval/ for hidden tests. "
+    visible_test_cmd="$(cd "$WORKSPACE" && node_test_command "tests")"
+    hidden_test_cmd="$(cd "$WORKSPACE" && node_test_command "_eval")"
+    eval_prompt+="This is a Node.js/TypeScript project — use '$visible_test_cmd' for visible tests and '$hidden_test_cmd' for hidden tests. "
   elif [[ -f "$WORKSPACE/go.mod" ]] || ls "$WORKSPACE"/*.go >/dev/null 2>&1; then
     eval_prompt+="This is a Go project — use 'go test ./...' for visible and 'go test ./_eval/...' for hidden tests. "
   else
@@ -409,6 +448,20 @@ run_evaluator() {
   eval_json=$(extract_json "$eval_output")
 
   if echo "$eval_json" | jq . >/dev/null 2>&1; then
+    if echo "$eval_json" | jq -e '
+      ((.bugs // []) | map(tostring | ascii_downcase) | join(" ")) as $bugs |
+      ((.justification // "") | ascii_downcase) as $justification |
+      ($bugs | test("permission denied|cannot run tests|could not run tests|execution was blocked")) or
+      ($justification | test("permission denied|cannot run tests|could not run tests|execution was blocked"))
+    ' >/dev/null 2>&1; then
+      eval_json=$(echo "$eval_json" | jq '
+        .verdict = "FAIL"
+        | .scores.functionality = 1
+        | .scores.test_coverage = 1
+        | .bugs = ((.bugs // []) + ["Harness blocked or skipped evaluator test execution"])
+      ')
+    fi
+
     echo "$eval_json" | jq . > "$EVALUATIONS_DIR/eval.json"
     VERDICT=$(echo "$eval_json" | jq -r '.verdict // "FAIL"')
     EVAL_SCORES=$(echo "$eval_json" | jq -c '.scores // {}')

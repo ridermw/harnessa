@@ -320,7 +320,32 @@ class EvaluatorAgent(BaseAgent):
         prompt = self._build_prompt(
             criteria, code_dir, eval_test_result, regression_result, fixture_ok
         )
-        response = self.call_llm(prompt)
+
+        if self.model_id.startswith("copilot/"):
+            # Delegation mode: copilot runs tests and grades directly
+            copilot_prompt = (
+                "IMPORTANT: Your ENTIRE response must be a single JSON object. "
+                "No text before or after it. No markdown formatting. No explanation.\n\n"
+                + prompt
+            )
+            result = self.run_executor(
+                copilot_prompt,
+                work_dir=code_dir,
+                allow_tools="shell(*), read",
+            )
+            # Build a CanonicalResponse from copilot output to reuse parser
+            response = CanonicalResponse(
+                text=result.stdout,
+                stop_reason="end_turn",
+                model=result.model,
+                tokens_in=0,
+                tokens_out=0,
+                cost=0.0,
+                truncated=False,
+            )
+        else:
+            response = self.call_llm(prompt)
+
         return self._parse_llm_response(response, criteria, eval_test_result, regression_result, iteration)
 
     def _build_prompt(

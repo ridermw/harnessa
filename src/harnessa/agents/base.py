@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from harnessa.agents.executors import CopilotExecutor, ExecutionResult
 from harnessa.telemetry.models import AgentMetrics, CanonicalResponse
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,36 @@ class BaseAgent(abc.ABC):
             tokens_out=0,
             cost=0.0,
             truncated=False,
+        )
+
+    def run_executor(self, prompt: str, work_dir: Path | None = None, **kwargs: Any) -> ExecutionResult:
+        """Execute a task via the configured executor.
+
+        Dispatch logic:
+        - If model_id starts with ``copilot/`` → CopilotExecutor (delegation mode)
+        - Otherwise → wrap call_llm() result into an ExecutionResult
+
+        Args:
+            prompt: The task description.
+            work_dir: Directory for the executor to work in.
+            **kwargs: Forwarded to CopilotExecutor.execute().
+
+        Returns:
+            ExecutionResult from the chosen backend.
+        """
+        if self.model_id.startswith("copilot/"):
+            actual_model = self.model_id.removeprefix("copilot/")
+            executor = CopilotExecutor(model=actual_model)
+            return executor.execute(prompt, work_dir or self.work_dir, **kwargs)
+
+        # Fall back to call_llm for text-based completion
+        response = self.call_llm(prompt)
+        return ExecutionResult(
+            stdout=response.text,
+            exit_code=0,
+            duration_s=0.0,
+            model=self.model_id,
+            success=True,
         )
 
     def write_status(self, status: str) -> None:

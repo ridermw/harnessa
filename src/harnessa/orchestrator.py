@@ -13,6 +13,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from harnessa.agents.contract import ContractNegotiator
 from harnessa.agents.evaluator import EvaluationResult, EvaluatorAgent, Verdict
 from harnessa.agents.generator import GeneratorAgent
 from harnessa.agents.isolation import IsolationManager
@@ -20,7 +21,7 @@ from harnessa.agents.planner import PlannerAgent
 from harnessa.config import RunConfig, RunMode
 from harnessa.criteria.loader import CriteriaLoader
 from harnessa.reconciler import ScoreReconciler
-from harnessa.telemetry.models import AgentMetrics, BenchmarkScore, RunManifest
+from harnessa.telemetry.models import AgentMetrics, BenchmarkScore, ContractMetrics, RunManifest
 
 logger = logging.getLogger(__name__)
 
@@ -85,10 +86,11 @@ class Orchestrator:
         final_bugs: list = []
         verdict = "FAIL"
         sprints: list = []
+        contract_metrics: ContractMetrics | None = None
 
         try:
             if self.config.mode == RunMode.TRIO:
-                verdict, final_scores, final_bugs, sprints, all_agent_metrics = (
+                verdict, final_scores, final_bugs, sprints, all_agent_metrics, contract_metrics = (
                     self._run_trio_mode(gen_worktree, eval_worktree, criteria)
                 )
             else:
@@ -122,6 +124,7 @@ class Orchestrator:
             scores=final_scores,
             bugs=final_bugs,
             sprints=sprints,
+            contract_metrics=contract_metrics,
             cost_usd=total_cost,
             duration_s=round(total_duration, 2),
             verdict=verdict,
@@ -203,8 +206,8 @@ class Orchestrator:
         gen_worktree: Path,
         eval_worktree: Path,
         criteria: list,
-    ) -> tuple[str, list[BenchmarkScore], list, list, list[AgentMetrics]]:
-        """Trio mode: planner → (generator ↔ evaluator) loop."""
+    ) -> tuple[str, list[BenchmarkScore], list, list, list[AgentMetrics], ContractMetrics | None]:
+        """Trio mode: planner → contract negotiation → (generator ↔ evaluator) loop."""
         all_metrics: list[AgentMetrics] = []
         sprints: list = []
 
@@ -220,8 +223,34 @@ class Orchestrator:
             output_dir=self._run_dir,
         )
         all_metrics.append(planner.get_metrics())
+        spec_text = spec_path.read_text(encoding="utf-8")
 
-        # b. Iteration loop
+        # b. Contract negotiation
+        contract_metrics: ContractMetrics | None = None
+        generator_for_contract = GeneratorAgent(
+            model_id=self.config.evaluator_models[0],
+            work_dir=gen_worktree,
+        )
+        evaluator_for_contract = EvaluatorAgent(
+            model_id=self.config.evaluator_models[0],
+            work_dir=eval_worktree,
+        )
+        negotiator = ContractNegotiator(generator_for_contract, evaluator_for_contract)
+
+        contract_start = time.monotonic()
+        proposal, agreement = negotiator.negotiate(spec_text, self._run_dir)
+        contract_duration = time.monotonic() - contract_start
+
+        contract_metrics = ContractMetrics(
+            negotiation_rounds=negotiator.rounds_completed,
+            approved=agreement.approved,
+            features_proposed=len(proposal.features),
+            criteria_proposed=len(proposal.acceptance_criteria),
+            criteria_added_by_evaluator=len(agreement.added_criteria),
+            duration_s=round(contract_duration, 2),
+        )
+
+        # c. Iteration loop
         eval_dir = eval_worktree / "_eval"
         feedback_path: Path | None = None
         final_eval: EvaluationResult | None = None
@@ -293,6 +322,7 @@ class Orchestrator:
                     current_bugs,
                     sprints,
                     all_metrics,
+                    contract_metrics,
                 )
 
             # FAIL: write feedback for next iteration
@@ -317,6 +347,7 @@ class Orchestrator:
             current_bugs,
             sprints,
             all_metrics,
+            contract_metrics,
         )
 
     # ------------------------------------------------------------------

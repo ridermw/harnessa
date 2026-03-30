@@ -7,8 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Comprehensive skill rewrite (`SKILL.md`: 86→332 lines) with role separation protocol, anti-people-pleasing rules, and structured agent handoff format
+- Comprehensive install guide (`INSTALL.md`: 74→234 lines) with verification steps, best practices, troubleshooting, and uninstall instructions
+- Showcase app rebuilt as proper full-stack application (32 files: Express + React + Vite + Tailwind + sql.js) — AI Code Review Dashboard
+- `showcase/BUILD_LOG.md` documenting how the Planner→Generator→Evaluator trio built the showcase app end-to-end
+- Complete experimental results (`RESULTS.md`) — 0 pending markers, all 12 article claims + 3 Harnessa hypotheses evaluated with verdicts
+- Benchmark results: solo vs trio across 5 benchmarks (10 runs total) with per-iteration score tracking
 - Runner scripts (`run-benchmark.sh`, `run-all-benchmarks.sh`, `analyze-results.sh`) for automated benchmark execution
-- Complete experimental results (`RESULTS.md`) with 10 benchmark runs across solo and trio modes
 - Copilot CLI skill (`/harnessa` command) — GAN-inspired 3-agent pipeline usable in any repo
 - Installation instructions (`INSTALL.md`) with per-project, global, and runner script options
 - Evaluator JSON extraction hardening (3-strategy parser: direct, brace-matching, code-block extraction)

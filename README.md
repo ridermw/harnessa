@@ -84,18 +84,46 @@ The Evaluator's feedback flows back to the Generator as input for the next itera
 ### Telemetry
 Every run produces structured telemetry: timing, cost, scores, bugs, and quality trends. Claims about improvement are backed by data.
 
+## Experimental Results
+
+Full data: [RESULTS.md](RESULTS.md) — 10 benchmark runs across 5 tasks in Python, TypeScript, and Go.
+
+| Metric | Solo | Trio | Δ |
+|--------|------|------|---|
+| Verdicts | 3 PASS, 2 FAIL | 4 PASS, 1 FAIL | +1 PASS |
+| Mean functionality score | 4.8 | 7.6 | **+2.8** |
+| Benchmarks won | — | 3 of 5 | |
+| Duration multiplier | — | ~1.8x | |
+
+**Headline:** Solo FAIL → Trio PASS on the fullstack benchmark — the categorical difference the article predicted.
+
+**Article claims validated:** 5 of 9 confirmed, 2 partially confirmed, 2 inconclusive. All 3 Harnessa-specific hypotheses evaluated (2 confirmed, 1 inconclusive). See [Section 6.1](RESULTS.md#61-summary-of-findings).
+
+## Showcase App
+
+The `showcase/` directory contains a full-stack AI Code Review Dashboard built by the trio pattern itself. 32 files: Express + React + Vite + Tailwind + sql.js.
+
+```bash
+cd showcase && npm install && npm run dev
+```
+
+See [showcase/BUILD_LOG.md](showcase/BUILD_LOG.md) for the full build narrative (Planner→Generator→Evaluator phases).
+
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [PROJECT_SPEC.md](PROJECT_SPEC.md) | Complete project specification — the "bible" for this repo |
+| [RESULTS.md](RESULTS.md) | Experimental results — solo vs trio across 5 benchmarks |
+| [INSTALL.md](INSTALL.md) | Installation guide with verification, troubleshooting, uninstall |
+| [showcase/BUILD_LOG.md](showcase/BUILD_LOG.md) | How the trio built the showcase app end-to-end |
 | [docs/ARTICLE_REFERENCE.md](docs/ARTICLE_REFERENCE.md) | Full text of the Anthropic article that inspired this project |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical architecture deep-dive |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical architecture deep-dive |
 
 ## Project Status
 
-🚧 **Early stage** — This project is part speculation, part framework-building, and part rigorous telemetry/testing infrastructure. We're building the harness, the test suite to prove it works, and the documentation to explain why.
+✅ **V1 complete** — Framework built (21 source files, 213 tests), 5 benchmarks run in both solo and trio modes, experimental results documented. The trio pattern shows measurable quality improvement on medium-complexity tasks, with the strongest signal on fullstack work where solo agents fail.
 
 ## Related Reading
 

@@ -61,21 +61,6 @@ src/harnessa/
 - **Skeptical evaluator**: Anti-people-pleasing prompting, rubber-stamp detection, refusal handling
 - **Telemetry first**: Every run produces structured JSON with timing, cost, scores, bugs, model versions
 
-## Benchmarks
-5 benchmark repos in `benchmarks/`, each with:
-- Real code with a seeded bug or missing feature
-- `TASK.md` — the prompt given to the harness
-- `tests/` — visible tests (some failing)
-- `_eval/` — hidden acceptance tests (evaluator-only)
-- `_eval/fixtures/` — expected output for deterministic verification
-
-Benchmarks:
-- `small-bugfix-python` — CLI arg parser ± sign bug
-- `small-feature-typescript` — retry with exponential backoff
-- `small-bugfix-go` — HTTP server connection pool race condition
-- `medium-feature-python` — FastAPI TODO app tags feature
-- `medium-feature-fullstack` — React+Express real-time notifications
-
 ## Criteria
 YAML criteria files in `criteria/`:
 - `backend.yaml` — backend-focused grading criteria
@@ -89,6 +74,55 @@ pytest -k "evaluator"     # Tests matching pattern
 ```
 
 All LLM calls are mocked in tests — no API keys needed to run the test suite.
+
+## `/harnessa` Copilot CLI Skill
+One-command trio available in any repo:
+```bash
+copilot -p '/harnessa Fix the authentication bug' --allow-all
+```
+Skill file: `.github/copilot/skills/harnessa/SKILL.md` (332 lines). Defines role separation protocol, anti-people-pleasing evaluator rules, and structured JSON handoff format between agents.
+
+## Runner Scripts
+```bash
+# Run a single benchmark
+bash scripts/run-benchmark.sh small-bugfix-python trio
+
+# Run all 5 benchmarks in both modes
+bash scripts/run-all-benchmarks.sh
+
+# Analyze results from telemetry JSON
+bash scripts/analyze-results.sh
+```
+Scripts use `copilot -p` under the hood — no API keys needed (uses your Copilot subscription).
+
+## Showcase App
+`showcase/` — Full-stack AI Code Review Dashboard built by the trio pattern:
+- **Stack:** Express + React + Vite + Tailwind + sql.js (32 files)
+- **Run:** `cd showcase && npm install && npm run dev`
+- **Build log:** `showcase/BUILD_LOG.md` documents each phase (Planner→Generator→Evaluator)
+
+## Key Experimental Findings
+See [RESULTS.md](RESULTS.md) for full data. Headlines:
+- **Trio won 3/5 benchmarks**, tied 1, both failed 1
+- **Mean functionality:** Solo 4.8 → Trio 7.6 (+2.8)
+- **Solo FAIL → Trio PASS** on the fullstack benchmark (categorical difference)
+- **5 of 9 article claims confirmed**, 2 partially confirmed, 2 inconclusive
+- **Trio ~1.8x slower** but quality improvement justifies it on medium+ tasks
+
+## Benchmarks
+5 benchmark repos in `benchmarks/`, each with:
+- Real code with a seeded bug or missing feature
+- `TASK.md` — the prompt given to the harness
+- `tests/` — visible tests (some failing)
+- `_eval/` — hidden acceptance tests (evaluator-only)
+- `_eval/fixtures/` — expected output for deterministic verification
+
+Benchmarks:
+- `small-bugfix-python` — Python: CLI arg parser ± sign bug
+- `small-feature-typescript` — TypeScript: retry with exponential backoff
+- `small-bugfix-go` — Go: HTTP server connection pool race condition
+- `medium-feature-python` — Python: FastAPI TODO app tags feature
+- `medium-feature-fullstack` — TypeScript/JavaScript: React+Express real-time notifications
 
 ## Coding Conventions
 - Python 3.12+, type hints everywhere

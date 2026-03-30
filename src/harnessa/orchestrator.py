@@ -51,6 +51,7 @@ class Orchestrator:
         self._run_dir = Path(f"runs/{config.run_id}")
         self._isolation = IsolationManager()
         self._original_sigint: signal.Handlers | None = None
+        self._reconciled_result: Any = None
 
     def start_run(self) -> RunManifest:
         """Execute the full pipeline and return the RunManifest."""
@@ -116,6 +117,21 @@ class Orchestrator:
         total_cost = sum(a.cost_usd for a in all_agent_metrics)
         total_duration = time.monotonic() - run_start
 
+        # Extract cross-model reconciliation data if available
+        evaluator_agreement_rate: float | None = None
+        evaluator_disagreements: list[dict] | None = None
+        if self._reconciled_result is not None:
+            evaluator_agreement_rate = self._reconciled_result.agreement_rate
+            evaluator_disagreements = [
+                {
+                    "criterion": d.criterion,
+                    "score_a": d.score_a,
+                    "score_b": d.score_b,
+                    "delta": d.delta,
+                }
+                for d in self._reconciled_result.disagreements
+            ]
+
         manifest = RunManifest(
             run_id=self.config.run_id,
             benchmark=self.config.benchmark,
@@ -130,6 +146,8 @@ class Orchestrator:
             verdict=verdict,
             started_at=started_at,
             finished_at=datetime.now(),
+            evaluator_agreement_rate=evaluator_agreement_rate,
+            evaluator_disagreements=evaluator_disagreements,
         )
 
         # 7. Write manifest
@@ -153,7 +171,7 @@ class Orchestrator:
         eval_worktree: Path,
         criteria: list,
     ) -> tuple[str, list[BenchmarkScore], list, list[AgentMetrics]]:
-        """Solo mode: generator → evaluator (no planner, no iteration)."""
+        """Solo mode: generator → evaluator(s) (no planner, no iteration)."""
         all_metrics: list[AgentMetrics] = []
 
         # Read task prompt
@@ -179,25 +197,41 @@ class Orchestrator:
         # Save artifact snapshot
         self._save_artifact_snapshot(gen_worktree)
 
-        # Run evaluator
-        evaluator = EvaluatorAgent(
-            model_id=self.config.evaluator_models[0],
-            work_dir=eval_worktree,
-        )
+        # Run evaluator(s)
         eval_dir = eval_worktree / "_eval"
-        eval_result: EvaluationResult = self._launch_agent(
-            evaluator, "grade",
-            code_dir=gen_worktree,
-            eval_dir=eval_dir,
-            criteria_path=self.config.criteria_path,
-            output_dir=self._run_dir,
-        )
-        all_metrics.append(evaluator.get_metrics())
+        eval_results: list[EvaluationResult] = []
+        for model_id in self.config.evaluator_models:
+            evaluator = EvaluatorAgent(
+                model_id=model_id,
+                work_dir=eval_worktree,
+            )
+            eval_result: EvaluationResult = self._launch_agent(
+                evaluator, "grade",
+                code_dir=gen_worktree,
+                eval_dir=eval_dir,
+                criteria_path=self.config.criteria_path,
+                output_dir=self._run_dir,
+            )
+            eval_results.append(eval_result)
+            all_metrics.append(evaluator.get_metrics())
 
+        # Cross-model reconciliation
+        if len(eval_results) > 1:
+            reconciler = ScoreReconciler()
+            reconciled = reconciler.reconcile(eval_results[0], eval_results[1])
+            self._reconciled_result = reconciled
+            return (
+                reconciled.verdict.value,
+                reconciled.final_scores,
+                reconciled.final_bugs,
+                all_metrics,
+            )
+
+        self._reconciled_result = None
         return (
-            eval_result.verdict.value,
-            eval_result.scores,
-            eval_result.bugs,
+            eval_results[0].verdict.value,
+            eval_results[0].scores,
+            eval_results[0].bugs,
             all_metrics,
         )
 
@@ -294,10 +328,12 @@ class Orchestrator:
             if len(eval_results) > 1:
                 reconciler = ScoreReconciler()
                 reconciled = reconciler.reconcile(eval_results[0], eval_results[1])
+                self._reconciled_result = reconciled
                 current_scores = reconciled.final_scores
                 current_bugs = reconciled.final_bugs
                 current_verdict = reconciled.verdict.value
             else:
+                self._reconciled_result = None
                 current_scores = eval_results[0].scores
                 current_bugs = eval_results[0].bugs
                 current_verdict = eval_results[0].verdict.value

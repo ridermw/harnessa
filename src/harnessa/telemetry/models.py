@@ -171,4 +171,10 @@ class RunManifest(BaseModel):
     started_at: datetime = Field(default_factory=datetime.now)
     finished_at: datetime | None = Field(default=None)
     replayed_from: str | None = Field(default=None, description="Run ID this was replayed from")
+    evaluator_agreement_rate: float | None = Field(
+        default=None, description="Cross-model evaluator agreement rate (0.0-1.0)"
+    )
+    evaluator_disagreements: list[dict] | None = Field(
+        default=None, description="Per-criterion disagreements between evaluators"
+    )
     harness_version: str = Field(default="0.1.0")

@@ -238,7 +238,7 @@ run_solo() {
   gen_output=$(cd "$WORKSPACE" && copilot -p \
     "Read TASK.md in the current directory. Implement the fix or feature it describes. Run the tests in tests/ to verify your changes pass. Make minimal, clean changes." \
     -s --no-ask-user --model "$MODEL" \
-    --allow-tool='write, shell(*), read' --allow-all-paths 2>&1) || {
+    --allow-all 2>&1) || {
     err "Generator failed"
     echo "$gen_output" > "$GENERATOR_DIR/transcript.txt"
     gen_end=$(date +%s)
@@ -271,7 +271,7 @@ run_trio() {
   plan_output=$(cd "$WORKSPACE" && copilot -p \
     "Read TASK.md in the current directory. You are a planner agent. Expand this task into a comprehensive spec covering: problem statement, root cause analysis (if bugfix), proposed approach with specific steps, acceptance criteria, edge cases to handle. Write the complete spec to stdout." \
     -s --no-ask-user --model "$MODEL" \
-    --allow-tool='read' --allow-all-paths 2>&1) || {
+    --allow-all 2>&1) || {
     err "Planner failed"
     echo "$plan_output" > "$PLANNER_DIR/spec.md"
     plan_end=$(date +%s)
@@ -313,7 +313,7 @@ run_trio() {
 
     gen_output=$(cd "$WORKSPACE" && copilot -p "$gen_prompt" \
       -s --no-ask-user --model "$MODEL" \
-      --allow-tool='write, shell(*), read' --allow-all-paths 2>&1) || {
+      --allow-all 2>&1) || {
       err "Generator failed (iteration $iteration)"
       echo "$gen_output" > "$GENERATOR_DIR/transcript-iter${iteration}.txt"
       gen_end=$(date +%s)
@@ -389,7 +389,7 @@ run_evaluator() {
 
   eval_output=$(cd "$WORKSPACE" && copilot -p "$eval_prompt" \
     -s --no-ask-user --model "$EVAL_MODEL" \
-    --allow-tool='shell(*), read' --allow-all-paths 2>&1) || {
+    --allow-all 2>&1) || {
     err "Evaluator failed"
     echo "$eval_output" > "$EVALUATIONS_DIR/eval-raw${iteration_label:+-iter$iteration_label}.txt"
   }

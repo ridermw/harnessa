@@ -14,6 +14,29 @@ from harnessa.telemetry.models import AgentMetrics, CanonicalResponse
 
 logger = logging.getLogger(__name__)
 
+# Well-known model prefixes that LiteLLM can't auto-detect.
+_PROVIDER_PREFIXES: list[tuple[str, str]] = [
+    ("claude-", "anthropic/"),
+    ("gpt-", "openai/"),
+    ("o1-", "openai/"),
+    ("o3-", "openai/"),
+    ("o4-", "openai/"),
+]
+
+
+def normalize_model_id(model_id: str) -> str:
+    """Add a LiteLLM provider prefix when the bare model name is ambiguous.
+
+    LiteLLM requires ``provider/model`` for many models.  If the caller
+    already supplied a prefix (contains ``/``), return as-is.
+    """
+    if "/" in model_id:
+        return model_id
+    for prefix, provider in _PROVIDER_PREFIXES:
+        if model_id.startswith(prefix):
+            return f"{provider}{model_id}"
+    return model_id
+
 
 class BaseAgent(abc.ABC):
     """Abstract base class for all Harnessa agents.
@@ -34,6 +57,10 @@ class BaseAgent(abc.ABC):
     def execute(self, **kwargs: Any) -> None:
         """Execute the agent's primary task. Implemented by subclasses."""
         ...
+
+    def _litellm_model(self) -> str:
+        """Return the model ID with a LiteLLM-compatible provider prefix."""
+        return normalize_model_id(self.model_id)
 
     def launch_subprocess(self, cmd: list[str], env: dict[str, str] | None = None) -> subprocess.Popen[bytes]:
         """Launch a subprocess for this agent.

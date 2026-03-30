@@ -178,7 +178,7 @@ class GeneratorAgent(BaseAgent):
 
         try:
             raw = litellm.completion(
-                model=self.model_id,
+                model=self._litellm_model(),
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},

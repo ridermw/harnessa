@@ -55,10 +55,30 @@ package_json_script() {
   jq -r --arg script_name "$script_name" '.scripts[$script_name] // empty' package.json
 }
 
+ensure_vitest_eval_config() {
+  local config_path=".harnessa-vitest-eval.config.mjs"
+
+  if [[ ! -f "$config_path" ]]; then
+    cat > "$config_path" <<'EOF'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    include: ['_eval/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    environment: 'node',
+  },
+})
+EOF
+  fi
+
+  echo "$config_path"
+}
+
 node_test_command() {
   local test_dir="${1:-tests}"
   local test_script
   local eval_script
+  local eval_config
 
   test_script="$(package_json_script test)"
   eval_script="$(package_json_script test:eval)"
@@ -67,7 +87,8 @@ node_test_command() {
     if [[ -n "$eval_script" ]]; then
       echo "npm run test:eval -- --runInBand"
     elif echo "$test_script" | grep -qi 'vitest'; then
-      echo "npx --yes vitest run _eval/"
+      eval_config="$(ensure_vitest_eval_config)"
+      echo "npx --yes vitest run --config $eval_config"
     elif echo "$test_script" | grep -qi 'jest' && [[ -f "_eval/jest.config.js" ]]; then
       echo "npx jest --config _eval/jest.config.js --runInBand"
     else

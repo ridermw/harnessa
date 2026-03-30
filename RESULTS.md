@@ -1,6 +1,6 @@
 # Harnessa V1 — Experimental Results
 
-> **Status:** TEMPLATE — awaiting real benchmark runs
+> **Status:** V1 COMPLETE — 11 benchmark runs across 5 benchmarks (solo + trio). Remaining: 1 run per mode (target: 3+ for statistical significance), cost data unavailable via Copilot CLI.
 >
 > **Repo:** [ridermw/harnessa](https://github.com/ridermw/harnessa)
 >

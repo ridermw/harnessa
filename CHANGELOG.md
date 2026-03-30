@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.2.0] — 2026-03-30
 
 ### Added
 - Comprehensive skill rewrite (`SKILL.md`: 86→332 lines) with role separation protocol, anti-people-pleasing rules, and structured agent handoff format
@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Copilot CLI skill (`/harnessa` command) — GAN-inspired 3-agent pipeline usable in any repo
 - Installation instructions (`INSTALL.md`) with per-project, global, and runner script options
 - Evaluator JSON extraction hardening (3-strategy parser: direct, brace-matching, code-block extraction)
+
+## [Unreleased]
 
 ## [0.1.0] — 2026-03-26
 

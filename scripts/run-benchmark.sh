@@ -236,9 +236,9 @@ run_solo() {
   gen_start=$(date +%s)
 
   gen_output=$(cd "$WORKSPACE" && copilot -p \
-    "Read TASK.md in the current directory. Implement the fix or feature it describes. Run the tests in tests/ to verify your changes pass. Make minimal, clean changes." \
+    "Read TASK.md in the current directory. Implement the fix or feature it describes. Run the automated tests in tests/ to verify your changes pass. Make minimal, clean changes. Do not start long-running dev servers, watch processes, or manual demos. Do not create plans, todo lists, or extra documentation." \
     -s --no-ask-user --model "$MODEL" \
-    --allow-all 2>&1) || {
+    --allow-tool='write, shell(*), read' --allow-all-paths 2>&1) || {
     err "Generator failed"
     echo "$gen_output" > "$GENERATOR_DIR/transcript.txt"
     gen_end=$(date +%s)
@@ -269,9 +269,9 @@ run_trio() {
   plan_start=$(date +%s)
 
   plan_output=$(cd "$WORKSPACE" && copilot -p \
-    "Read TASK.md in the current directory. You are a planner agent. Expand this task into a comprehensive spec covering: problem statement, root cause analysis (if bugfix), proposed approach with specific steps, acceptance criteria, edge cases to handle. Write the complete spec to stdout." \
+    "Read TASK.md in the current directory. You are a planner agent. Expand this task into a concise spec covering: problem statement, root cause analysis (if bugfix), proposed approach with specific steps, acceptance criteria, and edge cases to handle. Do not run shell commands, modify files, create todo lists, or start servers. Write only the spec to stdout." \
     -s --no-ask-user --model "$MODEL" \
-    --allow-all 2>&1) || {
+    --allow-tool='read' --allow-all-paths 2>&1) || {
     err "Planner failed"
     echo "$plan_output" > "$PLANNER_DIR/spec.md"
     plan_end=$(date +%s)
@@ -304,7 +304,7 @@ run_trio() {
       gen_prompt+="Fix the issues described above. "
     fi
 
-    gen_prompt+="Implement the fix or feature. Run the tests in tests/ to verify your changes pass. Make minimal, clean changes."
+    gen_prompt+="Implement the fix or feature. Run the automated tests in tests/ to verify your changes pass. Make minimal, clean changes. Do not start long-running dev servers, watch processes, or manual demos. Do not create plans, todo lists, or extra documentation."
 
     # --- Generator ---
     log "Running generator (iteration $iteration)..."
@@ -313,7 +313,7 @@ run_trio() {
 
     gen_output=$(cd "$WORKSPACE" && copilot -p "$gen_prompt" \
       -s --no-ask-user --model "$MODEL" \
-      --allow-all 2>&1) || {
+      --allow-tool='write, shell(*), read' --allow-all-paths 2>&1) || {
       err "Generator failed (iteration $iteration)"
       echo "$gen_output" > "$GENERATOR_DIR/transcript-iter${iteration}.txt"
       gen_end=$(date +%s)
@@ -379,6 +379,7 @@ run_evaluator() {
   eval_prompt+="functionality (do tests pass? does the code work?), "
   eval_prompt+="code_quality (clean, minimal, idiomatic?), "
   eval_prompt+="test_coverage (are edge cases handled?). "
+  eval_prompt+="Only run the automated test commands described above. Do not start dev servers, watchers, or manual demos. "
   eval_prompt+="Be harsh and objective. Any criterion below 6 means overall FAIL. "
   eval_prompt+="After running tests and analyzing the code, respond with ONLY this JSON (no other text): "
   eval_prompt+='{\"scores\": {\"product_depth\": N, \"functionality\": N, \"code_quality\": N, \"test_coverage\": N}, '
@@ -389,7 +390,7 @@ run_evaluator() {
 
   eval_output=$(cd "$WORKSPACE" && copilot -p "$eval_prompt" \
     -s --no-ask-user --model "$EVAL_MODEL" \
-    --allow-all 2>&1) || {
+    --allow-tool='shell(*), read' --allow-all-paths 2>&1) || {
     err "Evaluator failed"
     echo "$eval_output" > "$EVALUATIONS_DIR/eval-raw${iteration_label:+-iter$iteration_label}.txt"
   }

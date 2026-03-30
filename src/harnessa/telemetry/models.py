@@ -131,6 +131,19 @@ class DifficultyAnalysis(BaseModel):
     trio_avg: float | None = Field(default=None, description="Trio mode average score")
 
 
+class ContractMetrics(BaseModel):
+    """Metrics from the contract negotiation phase."""
+
+    model_config = {"strict": True}
+
+    negotiation_rounds: int = Field(ge=1, le=5)
+    approved: bool = True
+    features_proposed: int = Field(ge=0)
+    criteria_proposed: int = Field(ge=0)
+    criteria_added_by_evaluator: int = Field(ge=0)
+    duration_s: float = Field(ge=0.0)
+
+
 class RunManifest(BaseModel):
     """Top-level run metadata and results — the canonical output artifact."""
 
@@ -148,6 +161,9 @@ class RunManifest(BaseModel):
     )
     sprints: list[SprintMetrics] = Field(
         default_factory=list, description="Per-iteration sprint metrics"
+    )
+    contract_metrics: ContractMetrics | None = Field(
+        default=None, description="Contract negotiation metrics (trio mode only)"
     )
     cost_usd: float = Field(default=0.0, ge=0.0)
     duration_s: float = Field(default=0.0, ge=0.0)

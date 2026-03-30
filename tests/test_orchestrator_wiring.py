@@ -251,12 +251,20 @@ class TestTrioModePipeline:
              patch("harnessa.orchestrator.IsolationManager") as mock_iso_cls, \
              patch("harnessa.orchestrator.PlannerAgent") as mock_planner_cls, \
              patch("harnessa.orchestrator.GeneratorAgent") as mock_gen_cls, \
-             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls:
+             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls, \
+             patch("harnessa.orchestrator.ContractNegotiator") as mock_negotiator_cls:
 
             mock_iso = mock_iso_cls.return_value
             mock_iso.prepare_generator_worktree.return_value = gen_dir
             mock_iso.prepare_evaluator_worktree.return_value = eval_tree
             orch._isolation = mock_iso
+
+            mock_negotiator = mock_negotiator_cls.return_value
+            mock_negotiator.rounds_completed = 1
+            mock_negotiator.negotiate.return_value = (
+                MagicMock(features=["f"], acceptance_criteria=["c"], files_to_modify=[], estimated_tests=1),
+                MagicMock(approved=True, added_criteria=[], removed_criteria=[]),
+            )
 
             def planner_run(**kwargs):
                 call_log.append("planner")
@@ -320,12 +328,20 @@ class TestRetryLoop:
              patch("harnessa.orchestrator.IsolationManager") as mock_iso_cls, \
              patch("harnessa.orchestrator.PlannerAgent") as mock_planner_cls, \
              patch("harnessa.orchestrator.GeneratorAgent") as mock_gen_cls, \
-             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls:
+             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls, \
+             patch("harnessa.orchestrator.ContractNegotiator") as mock_negotiator_cls:
 
             mock_iso = mock_iso_cls.return_value
             mock_iso.prepare_generator_worktree.return_value = gen_dir
             mock_iso.prepare_evaluator_worktree.return_value = eval_tree
             orch._isolation = mock_iso
+
+            mock_negotiator = mock_negotiator_cls.return_value
+            mock_negotiator.rounds_completed = 1
+            mock_negotiator.negotiate.return_value = (
+                MagicMock(features=["f"], acceptance_criteria=["c"], files_to_modify=[], estimated_tests=1),
+                MagicMock(approved=True, added_criteria=[], removed_criteria=[]),
+            )
 
             def planner_run(**kwargs):
                 p = kwargs.get("output_dir", benchmark_dir) / "planner" / "spec.md"
@@ -382,12 +398,20 @@ class TestRetryLoop:
              patch("harnessa.orchestrator.IsolationManager") as mock_iso_cls, \
              patch("harnessa.orchestrator.PlannerAgent") as mock_planner_cls, \
              patch("harnessa.orchestrator.GeneratorAgent") as mock_gen_cls, \
-             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls:
+             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls, \
+             patch("harnessa.orchestrator.ContractNegotiator") as mock_negotiator_cls:
 
             mock_iso = mock_iso_cls.return_value
             mock_iso.prepare_generator_worktree.return_value = gen_dir
             mock_iso.prepare_evaluator_worktree.return_value = eval_tree
             orch._isolation = mock_iso
+
+            mock_negotiator = mock_negotiator_cls.return_value
+            mock_negotiator.rounds_completed = 1
+            mock_negotiator.negotiate.return_value = (
+                MagicMock(features=["f"], acceptance_criteria=["c"], files_to_modify=[], estimated_tests=1),
+                MagicMock(approved=True, added_criteria=[], removed_criteria=[]),
+            )
 
             def planner_run(**kwargs):
                 p = kwargs.get("output_dir", benchmark_dir) / "planner" / "spec.md"
@@ -446,7 +470,20 @@ class TestCrossModelReconciliation:
              patch("harnessa.orchestrator.PlannerAgent") as mock_planner_cls, \
              patch("harnessa.orchestrator.GeneratorAgent") as mock_gen_cls, \
              patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls, \
-             patch("harnessa.orchestrator.ScoreReconciler") as mock_reconciler_cls:
+             patch("harnessa.orchestrator.ScoreReconciler") as mock_reconciler_cls, \
+             patch("harnessa.orchestrator.ContractNegotiator") as mock_negotiator_cls:
+
+            mock_iso = mock_iso_cls.return_value
+            mock_iso.prepare_generator_worktree.return_value = gen_dir
+            mock_iso.prepare_evaluator_worktree.return_value = eval_tree
+            orch._isolation = mock_iso
+
+            mock_negotiator = mock_negotiator_cls.return_value
+            mock_negotiator.rounds_completed = 1
+            mock_negotiator.negotiate.return_value = (
+                MagicMock(features=["f"], acceptance_criteria=["c"], files_to_modify=[], estimated_tests=1),
+                MagicMock(approved=True, added_criteria=[], removed_criteria=[]),
+            )
 
             mock_iso = mock_iso_cls.return_value
             mock_iso.prepare_generator_worktree.return_value = gen_dir

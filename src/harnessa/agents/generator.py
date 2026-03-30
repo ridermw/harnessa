@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -104,16 +105,28 @@ class GeneratorAgent(BaseAgent):
             feedback_content = self._read_feedback(feedback)
 
             user_prompt = self._build_user_prompt(spec_content, feedback_content)
-            response = self._call_model(user_prompt)
 
-            self._write_code(working_dir, response.text)
-            self._git_commit(working_dir)
+            if self.model_id.startswith("copilot/"):
+                # Delegation mode: copilot edits files directly
+                result = self.run_executor(user_prompt, work_dir=working_dir)
+                if result.success and result.files_changed:
+                    self._git_commit(working_dir, f"Generator iteration (copilot)")
+                elapsed = time.monotonic() - start
+                self._metrics.duration_s = elapsed
+                self.write_status("done")
+                logger.info("[%s] Copilot delegation complete in %s", self.agent_id, working_dir)
+                return working_dir
+            else:
+                # Text mode: existing _call_model() + _write_code() path
+                response = self._call_model(user_prompt)
+                self._write_code(working_dir, response.text)
+                self._git_commit(working_dir)
 
-            elapsed = time.monotonic() - start
-            self._record_metrics(response, elapsed)
-            self.write_status("done")
-            logger.info("[%s] Code written to %s", self.agent_id, working_dir)
-            return working_dir
+                elapsed = time.monotonic() - start
+                self._record_metrics(response, elapsed)
+                self.write_status("done")
+                logger.info("[%s] Code written to %s", self.agent_id, working_dir)
+                return working_dir
 
         except Exception as exc:
             elapsed = time.monotonic() - start
@@ -198,17 +211,47 @@ class GeneratorAgent(BaseAgent):
     def _write_code(self, working_dir: Path, content: str) -> None:
         """Write the LLM response to the working directory.
 
-        The content is written to a single output file. In a full
-        implementation this would parse the response and write multiple
-        files; for now, we write the raw response.
+        Tries to parse fenced code blocks with file paths first.
+        Falls back to writing everything to generated_output.txt.
         """
-        output_file = working_dir / "generated_output.txt"
-        tmp = output_file.with_suffix(".txt.tmp")
-        tmp.write_text(content, encoding="utf-8")
-        tmp.rename(output_file)
+        blocks = self._parse_fenced_blocks(content)
+        if blocks:
+            for filepath, code in blocks.items():
+                target = working_dir / filepath
+                target.parent.mkdir(parents=True, exist_ok=True)
+                tmp = target.with_suffix(target.suffix + ".tmp")
+                tmp.write_text(code, encoding="utf-8")
+                tmp.rename(target)
+            logger.info("[%s] Wrote %d file(s) from fenced blocks", self.agent_id, len(blocks))
+        else:
+            output_file = working_dir / "generated_output.txt"
+            tmp = output_file.with_suffix(".txt.tmp")
+            tmp.write_text(content, encoding="utf-8")
+            tmp.rename(output_file)
 
-    def _git_commit(self, working_dir: Path) -> None:
+    @staticmethod
+    def _parse_fenced_blocks(text: str) -> dict[str, str]:
+        """Parse fenced code blocks with file paths from LLM response.
+
+        Pattern: ```path/to/file.ext
+        <content>
+        ```
+
+        Returns dict mapping file path → content. Empty dict if no
+        blocks with file paths found.
+        """
+        pattern = re.compile(r"```(\S+)\n(.*?)```", re.DOTALL)
+        blocks: dict[str, str] = {}
+        for match in pattern.finditer(text):
+            path_candidate = match.group(1)
+            # Skip language-only markers (e.g. ```python, ```json)
+            if "/" in path_candidate or "." in path_candidate:
+                blocks[path_candidate] = match.group(2)
+        return blocks
+
+    def _git_commit(self, working_dir: Path, message: str | None = None) -> None:
         """Stage and commit all changes in *working_dir*."""
+        commit_msg = message or f"[{self.agent_id}] Implement spec"
         try:
             # Initialize repo if needed
             git_dir = working_dir / ".git"
@@ -239,7 +282,7 @@ class GeneratorAgent(BaseAgent):
                 check=True,
             )
             subprocess.run(
-                ["git", "commit", "-m", f"[{self.agent_id}] Implement spec"],
+                ["git", "commit", "-m", commit_msg],
                 cwd=str(working_dir),
                 capture_output=True,
                 check=False,  # No error if nothing to commit

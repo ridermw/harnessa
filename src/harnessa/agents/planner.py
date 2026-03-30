@@ -81,12 +81,31 @@ class PlannerAgent(BaseAgent):
         start = time.monotonic()
 
         try:
-            response = self._call_model(prompt)
-            self._write_spec(spec_path, response.text)
-            self._record_metrics(response, time.monotonic() - start)
-            self.write_status("done")
-            logger.info("[%s] Spec written to %s", self.agent_id, spec_path)
-            return spec_path
+            if self.model_id.startswith("copilot/"):
+                # Delegation mode: copilot writes the spec directly
+                result = self.run_executor(
+                    f"Read the task. Expand into a comprehensive spec: problem statement, "
+                    f"root cause analysis, proposed approach, acceptance criteria, edge cases. "
+                    f"Write the spec to {planner_dir}/spec.md\n\nTask:\n{prompt}",
+                    work_dir=output_dir,
+                    allow_tools="read, write",
+                )
+                if not spec_path.exists():
+                    # Copilot may have written to stdout instead of file
+                    spec_path.parent.mkdir(parents=True, exist_ok=True)
+                    spec_path.write_text(result.stdout, encoding="utf-8")
+                self._metrics.duration_s = time.monotonic() - start
+                self.write_status("done")
+                logger.info("[%s] Spec written to %s (copilot delegation)", self.agent_id, spec_path)
+                return spec_path
+            else:
+                # Text mode: existing _call_model() path
+                response = self._call_model(prompt)
+                self._write_spec(spec_path, response.text)
+                self._record_metrics(response, time.monotonic() - start)
+                self.write_status("done")
+                logger.info("[%s] Spec written to %s", self.agent_id, spec_path)
+                return spec_path
 
         except Exception as exc:
             elapsed = time.monotonic() - start

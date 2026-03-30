@@ -66,6 +66,8 @@ class MarkdownReporter:
             self._section_run_summary(m),
             self._section_score_breakdown(m),
         ]
+        if m.evaluator_agreement_rate is not None:
+            sections.append(self._section_cross_model(m))
         if m.quality_trends:
             sections.append(self._section_quality_trend(m))
         if m.bugs:
@@ -101,6 +103,46 @@ class MarkdownReporter:
                 f"| {s.criterion} | {s.score:.1f} | "
                 f"{self.PASS_THRESHOLD:.1f} | {pf} | {s.justification} |"
             )
+        return "\n".join(lines)
+
+    def _section_cross_model(self, m: RunManifest) -> str:
+        rate = m.evaluator_agreement_rate
+        rate_pct = f"{rate * 100:.0f}%" if rate is not None else "N/A"
+        lines = [
+            "## Cross-Model Evaluation\n",
+            f"**Agreement Rate:** {rate_pct}\n",
+        ]
+
+        # Per-evaluator models from agent metrics (evaluator agents are non-first)
+        eval_models = sorted({
+            a.model_id for a in m.agents
+        })
+        if eval_models:
+            lines.append("**Evaluator Models:** " + ", ".join(eval_models) + "\n")
+
+        # Reconciled scores table
+        lines.extend([
+            "### Reconciled Scores\n",
+            "| Criterion | Final Score | Justification |",
+            "|-----------|-------------|---------------|",
+        ])
+        for s in m.scores:
+            lines.append(f"| {s.criterion} | {s.score:.1f} | {s.justification} |")
+
+        # Disagreements
+        if m.evaluator_disagreements:
+            lines.extend([
+                "",
+                "### Disagreements\n",
+                "| Criterion | Score A | Score B | Delta |",
+                "|-----------|---------|---------|-------|",
+            ])
+            for d in m.evaluator_disagreements:
+                lines.append(
+                    f"| {d['criterion']} | {d['score_a']:.1f} | "
+                    f"{d['score_b']:.1f} | {d['delta']:.1f} |"
+                )
+
         return "\n".join(lines)
 
     def _section_quality_trend(self, m: RunManifest) -> str:

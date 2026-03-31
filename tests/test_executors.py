@@ -197,6 +197,27 @@ class TestCopilotExecutor:
 
         model_index = captured_cmd.index("--model")
         assert captured_cmd[model_index + 1] == "gpt-5.4"
+        assert "--allow-all-paths" not in captured_cmd
+
+    def test_allow_all_paths_is_opt_in(self, tmp_path: Path) -> None:
+        """Executor only adds --allow-all-paths when explicitly requested."""
+        executor = CopilotExecutor(model="claude-sonnet-4")
+
+        captured_cmd: list[str] = []
+        mock_proc = MagicMock()
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+        mock_proc.returncode = 0
+
+        def capture_run(cmd, **kwargs):
+            captured_cmd.extend(cmd)
+            return mock_proc
+
+        with patch("harnessa.agents.executors.shutil.which", return_value="/usr/bin/copilot"):
+            with patch("harnessa.agents.executors.subprocess.run", side_effect=capture_run):
+                executor.execute("task", tmp_path, allow_all_paths=True)
+
+        assert "--allow-all-paths" in captured_cmd
 
     def test_skip_dirs_in_snapshot(self, tmp_path: Path) -> None:
         """Directories like .git, node_modules, __pycache__ are skipped."""

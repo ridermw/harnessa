@@ -147,6 +147,43 @@ class TestRunDirectoryCreation:
 class TestSoloModePipeline:
     """Test solo mode: generator + evaluator, no planner."""
 
+    def test_solo_uses_absolute_paths_for_agent_io(
+        self,
+        benchmark_dir: Path,
+        criteria_file: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.chdir(benchmark_dir)
+        config = _make_config(benchmark_dir, criteria_file, mode=RunMode.SOLO)
+        orch = Orchestrator(config)
+
+        with patch.object(orch, "_read_task_prompt", return_value="Build it"), \
+             patch("harnessa.orchestrator.GeneratorAgent") as mock_gen_cls, \
+             patch("harnessa.orchestrator.EvaluatorAgent") as mock_eval_cls:
+
+            mock_gen = mock_gen_cls.return_value
+            mock_gen.agent_id = "generator"
+            mock_gen.run.return_value = Path("unused")
+            mock_gen.get_metrics.return_value = AgentMetrics(model_id="test-model")
+
+            mock_eval = mock_eval_cls.return_value
+            mock_eval.agent_id = "evaluator"
+            mock_eval.grade.return_value = _passing_eval_result()
+            mock_eval.get_metrics.return_value = AgentMetrics(model_id="test-model")
+
+            orch.start_run()
+
+            gen_kwargs = mock_gen.run.call_args.kwargs
+            eval_kwargs = mock_eval.grade.call_args.kwargs
+
+            assert gen_kwargs["working_dir"].is_absolute()
+            assert gen_kwargs["output_dir"].is_absolute()
+            assert eval_kwargs["code_dir"].is_absolute()
+            assert eval_kwargs["eval_dir"].is_absolute()
+            assert eval_kwargs["output_dir"].is_absolute()
+
+            shutil.rmtree(orch._run_dir, ignore_errors=True)
+
     def test_solo_calls_generator_and_evaluator(
         self, benchmark_dir: Path, criteria_file: Path
     ) -> None:

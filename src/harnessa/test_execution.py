@@ -185,6 +185,38 @@ def _build_python_command(test_dir: Path, report_path: Path) -> tuple[list[str],
     )
 
 
+def _missing_suite_result(
+    *,
+    suite_path: Path,
+    report_dir: Path,
+    suite_name: str,
+    runtime: str,
+) -> SuiteResult:
+    """Return a harness-error result when the requested suite directory is missing."""
+    if runtime == "node":
+        report_path = report_dir / f"{suite_name}-report.json"
+        framework = "node"
+        command = ["npm", "test", "--", str(suite_path)]
+        exit_code = 1
+    elif runtime == "go":
+        report_path = report_dir / f"{suite_name}-report.jsonl"
+        framework = "go test"
+        command = ["go", "test", str(suite_path)]
+        exit_code = 1
+    else:
+        report_path = report_dir / f"{suite_name}-report.xml"
+        command, framework = _build_python_command(suite_path, report_path)
+        exit_code = 4
+
+    return _invalid_result(
+        command=command,
+        framework=framework,
+        exit_code=exit_code,
+        report_path=report_path,
+        message=f"Test directory not found: {suite_path}",
+    )
+
+
 def _invalid_result(
     *,
     command: list[str],
@@ -429,6 +461,13 @@ def run_test_suite(
         preferred_name=preferred_name,
     )
     suite_name = suite_name or materialized_dir.name or "suite"
+    if not materialized_dir.exists() and (runtime == "python" or is_hidden):
+        return _missing_suite_result(
+            suite_path=suite_path,
+            report_dir=report_dir,
+            suite_name=suite_name,
+            runtime=runtime,
+        )
 
     if runtime == "node":
         report_path = report_dir / f"{suite_name}-report.json"

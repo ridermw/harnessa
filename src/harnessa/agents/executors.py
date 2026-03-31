@@ -52,6 +52,7 @@ class CopilotExecutor:
         work_dir: Path,
         allow_tools: str = "write, shell(*), read",
         timeout: int = 600,
+        allow_all_paths: bool = False,
     ) -> ExecutionResult:
         """Delegate a task to copilot -p.
 
@@ -60,6 +61,7 @@ class CopilotExecutor:
             work_dir: Directory where copilot should work.
             allow_tools: Comma-separated tool permissions.
             timeout: Max seconds to wait.
+            allow_all_paths: When True, allow edits outside work_dir.
 
         Returns:
             ExecutionResult with stdout, files_changed, etc.
@@ -80,8 +82,9 @@ class CopilotExecutor:
             "--no-ask-user",
             "--model", self.model,
             f"--allow-tool={allow_tools}",
-            "--allow-all-paths",
         ]
+        if allow_all_paths:
+            cmd.append("--allow-all-paths")
 
         logger.info("[copilot-executor] Running copilot -p in %s (model=%s)", work_dir, self.model)
         start = time.monotonic()

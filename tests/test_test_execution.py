@@ -16,6 +16,7 @@ from harnessa.test_execution import (
     _parse_go_json,
     _parse_jest_like_report,
     _parse_pytest_junit_xml,
+    run_test_suite,
 )
 
 
@@ -179,6 +180,20 @@ def test_parse_go_json_trusts_zero_total_build_failure(tmp_path: Path) -> None:
     assert result.total == 0
     assert result.errors == 1
     assert result.execution_ok is True
+
+
+def test_run_test_suite_marks_missing_python_dir_as_harness_error(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    missing_dir = tmp_path / "missing_eval"
+    report_dir = tmp_path / "reports"
+
+    result = run_test_suite(workspace, missing_dir, report_dir=report_dir, suite_name="eval-tests")
+
+    assert result.execution_ok is False
+    assert result.exit_code == 4
+    assert "Test directory not found" in result.output
+    assert result.command[:3] == ["python", "-m", "pytest"]
 
 
 def test_build_node_command_preserves_hidden_suite_role(tmp_path: Path) -> None:
@@ -390,4 +405,3 @@ def test_parse_pytest_junit_xml_trusts_zero_total_error_suite(tmp_path: Path) ->
     assert result.total == 0
     assert result.errors == 1
     assert result.execution_ok is True
-

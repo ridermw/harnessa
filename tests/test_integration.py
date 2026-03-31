@@ -247,7 +247,7 @@ class TestTrioModeIntegration:
             mock_eval.grade.assert_called_once()
 
             # --- Verify run directory structure ---
-            run_dir = Path(f"runs/{config.run_id}")
+            run_dir = orch._run_dir
             assert run_dir.exists()
             for subdir in ("planner", "generator", "evaluations", "telemetry"):
                 assert (run_dir / subdir).exists(), f"Missing subdir: {subdir}"
@@ -261,7 +261,7 @@ class TestTrioModeIntegration:
             # --- Verify generator received spec ---
             assert len(generator_calls) == 1
             gen_kwargs = generator_calls[0]
-            assert gen_kwargs["spec_path"] == spec_file
+            assert gen_kwargs["spec_path"] == spec_file.resolve()
             assert gen_kwargs["working_dir"] == gen_dir
 
             # --- Verify manifest telemetry ---

@@ -54,7 +54,7 @@ class Orchestrator:
 
     def __init__(self, config: RunConfig) -> None:
         self.config = config
-        self._run_dir = Path(f"runs/{config.run_id}")
+        self._run_dir = (Path("runs") / config.run_id).resolve()
         self._isolation = IsolationManager()
         self._original_sigint: signal.Handlers | None = None
         self._reconciled_result: Any = None
@@ -81,7 +81,7 @@ class Orchestrator:
         criteria = CriteriaLoader().load(self.config.criteria_path)
 
         # 3. Prepare worktrees
-        benchmark_path = Path(f"benchmarks/{self.config.benchmark}")
+        benchmark_path = (Path("benchmarks") / self.config.benchmark).resolve()
         gen_worktree = self._isolation.prepare_generator_worktree(
             benchmark_path, self._run_dir
         )

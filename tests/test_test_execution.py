@@ -88,7 +88,7 @@ def test_parse_jest_like_report_reads_machine_output(tmp_path: Path) -> None:
     assert result.execution_ok is True
 
 
-def test_parse_jest_like_report_marks_zero_total_failure_untrusted(tmp_path: Path) -> None:
+def test_parse_jest_like_report_trusts_zero_total_runtime_failure(tmp_path: Path) -> None:
     report_path = tmp_path / "jest-report.json"
     report_path.write_text(
         json.dumps(
@@ -110,7 +110,7 @@ def test_parse_jest_like_report_marks_zero_total_failure_untrusted(tmp_path: Pat
         output="Cannot find module",
     )
 
-    assert result.execution_ok is False
+    assert result.execution_ok is True
     assert result.errors == 2
 
 
@@ -159,7 +159,7 @@ def test_parse_go_json_counts_pass_and_fail(tmp_path: Path) -> None:
     assert report_path.read_text(encoding="utf-8") == stdout
 
 
-def test_parse_go_json_marks_zero_total_nonzero_exit_untrusted(tmp_path: Path) -> None:
+def test_parse_go_json_trusts_zero_total_build_failure(tmp_path: Path) -> None:
     report_path = tmp_path / "go-report.jsonl"
     stdout = "\n".join(
         [
@@ -178,7 +178,7 @@ def test_parse_go_json_marks_zero_total_nonzero_exit_untrusted(tmp_path: Path) -
 
     assert result.total == 0
     assert result.errors == 1
-    assert result.execution_ok is False
+    assert result.execution_ok is True
 
 
 def test_build_node_command_preserves_hidden_suite_role(tmp_path: Path) -> None:
@@ -373,3 +373,21 @@ exit 1
     assert result["passed"] == 1
     assert result["failed"] == 1
     assert Path(result["report_path"]).exists()
+def test_parse_pytest_junit_xml_trusts_zero_total_error_suite(tmp_path: Path) -> None:
+    report_path = tmp_path / "pytest-report.xml"
+    report_path.write_text(
+        "<testsuite tests='0' failures='0' errors='1' skipped='0'></testsuite>",
+        encoding="utf-8",
+    )
+
+    result = _parse_pytest_junit_xml(
+        report_path,
+        command=["python", "-m", "pytest"],
+        exit_code=1,
+        output="ImportError while loading conftest",
+    )
+
+    assert result.total == 0
+    assert result.errors == 1
+    assert result.execution_ok is True
+

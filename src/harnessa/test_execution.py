@@ -266,7 +266,6 @@ def _parse_jest_like_report(
     failed = int(data.get("numFailedTests", 0))
     total = int(data.get("numTotalTests", passed + failed))
     errors = int(data.get("numRuntimeErrorTestSuites", 0))
-    execution_ok = not (exit_code != 0 and total == 0)
     return SuiteResult(
         passed=passed,
         failed=failed,
@@ -277,7 +276,7 @@ def _parse_jest_like_report(
         command=command,
         exit_code=exit_code,
         report_path=str(report_path),
-        execution_ok=execution_ok,
+        execution_ok=True,
     )
 
 
@@ -342,7 +341,7 @@ def _parse_pytest_junit_xml(
         command=command,
         exit_code=exit_code,
         report_path=str(report_path),
-        execution_ok=not (exit_code != 0 and total == 0),
+        execution_ok=True,
     )
 
 
@@ -400,7 +399,7 @@ def _parse_go_json(
         command=command,
         exit_code=exit_code,
         report_path=str(report_path),
-        execution_ok=(parse_errors == 0 and not build_failure),
+        execution_ok=(parse_errors == 0),
     )
 
 

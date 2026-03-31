@@ -146,18 +146,27 @@ class PortAllocator:
 # ---------------------------------------------------------------------------
 
 
-def _is_git_repo(path: Path) -> bool:
-    """Return True if *path* is inside a git repository."""
+def _git_repo_root(path: Path) -> Path | None:
+    """Return the git repo root for *path*, or None when not inside a repo."""
     try:
-        subprocess.run(
+        result = subprocess.run(
             ["git", "rev-parse", "--is-inside-work-tree"],
             cwd=path,
             capture_output=True,
             check=True,
         )
-        return True
+        if result.stdout.strip() != b"true":
+            return None
+        top_level = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return Path(top_level.stdout.strip()).resolve()
     except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
+        return None
 
 
 class IsolationManager:
@@ -183,8 +192,9 @@ class IsolationManager:
         dest = run_dir / "generator"
         dest.mkdir(parents=True, exist_ok=True)
 
-        if _is_git_repo(benchmark_repo):
-            self._sparse_checkout_excluding_eval(benchmark_repo, dest)
+        repo_root = _git_repo_root(benchmark_repo)
+        if repo_root is not None and benchmark_repo.resolve() == repo_root:
+            self._sparse_checkout_excluding_eval(benchmark_repo.resolve(), dest)
         else:
             self._copy_excluding_eval(benchmark_repo, dest)
 

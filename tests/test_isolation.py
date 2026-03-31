@@ -87,6 +87,48 @@ class TestPrepareGeneratorWorktree:
         assert (gen_tree / "src" / "main.py").exists()
         assert not (gen_tree / "_eval").exists(), "_eval/ must be excluded from git generator tree"
 
+    def test_git_subdir_copies_only_benchmark_subtree(self, tmp_path: Path) -> None:
+        """Benchmark subdirs inside the main repo should not check out the whole repo."""
+        repo_root = tmp_path / "repo"
+        benchmark = repo_root / "benchmarks" / "small-go"
+        benchmark.mkdir(parents=True)
+        (benchmark / "go.mod").write_text("module example.com/small-go\n", encoding="utf-8")
+        (benchmark / "pool.go").write_text("package pool\n", encoding="utf-8")
+        (benchmark / "_eval").mkdir()
+        (benchmark / "_eval" / "pool_test.go").write_text("package pool\n", encoding="utf-8")
+        (repo_root / "tests").mkdir(parents=True)
+        (repo_root / "tests" / "test_repo.py").write_text("def test_repo(): assert True\n", encoding="utf-8")
+
+        subprocess.run(["git", "init"], cwd=repo_root, capture_output=True, check=True)
+        subprocess.run(["git", "add", "."], cwd=repo_root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init", "--allow-empty-message"],
+            cwd=repo_root,
+            capture_output=True,
+            check=True,
+            env={
+                "GIT_AUTHOR_NAME": "test",
+                "GIT_AUTHOR_EMAIL": "test@test.com",
+                "GIT_COMMITTER_NAME": "test",
+                "GIT_COMMITTER_EMAIL": "test@test.com",
+                "PATH": subprocess.check_output(
+                    ["bash", "-c", "echo $PATH"]
+                ).decode().strip(),
+            },
+        )
+
+        run_dir = tmp_path / "run"
+        run_dir.mkdir()
+
+        mgr = IsolationManager()
+        gen_tree = mgr.prepare_generator_worktree(benchmark, run_dir)
+
+        assert (gen_tree / "go.mod").exists()
+        assert (gen_tree / "pool.go").exists()
+        assert not (gen_tree / "_eval").exists()
+        assert not (gen_tree / "tests").exists()
+        assert not (gen_tree / "benchmarks").exists()
+
 
 # ---------------------------------------------------------------------------
 # IsolationManager — evaluator worktree (includes _eval/)

@@ -15,7 +15,14 @@ from pydantic import BaseModel, Field
 
 from harnessa.agents.base import BaseAgent
 from harnessa.criteria.loader import Criterion, CriteriaLoader
-from harnessa.telemetry.models import BenchmarkScore, BugReport, CanonicalResponse, Severity
+from harnessa.telemetry.models import (
+    BenchmarkScore,
+    BugReport,
+    CanonicalResponse,
+    Severity,
+    SuiteResult,
+)
+from harnessa.test_execution import run_test_suite
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +74,6 @@ class Verdict(StrEnum):
 
     PASS = "PASS"
     FAIL = "FAIL"
-
-
-class SuiteResult(BaseModel):
-    """Result of running a test suite."""
-
-    model_config = {"strict": True}
-
-    passed: int = Field(default=0, ge=0)
-    failed: int = Field(default=0, ge=0)
-    errors: int = Field(default=0, ge=0)
-    output: str = Field(default="")
 
 
 class EvaluationResult(BaseModel):
@@ -209,69 +205,16 @@ class EvaluatorAgent(BaseAgent):
 
     def _execute_tests(self, test_dir: Path, cwd: Path) -> SuiteResult:
         """Execute test suite, auto-detecting the runner."""
-        # Try pytest first
-        cmd = self._detect_test_command(test_dir, cwd)
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=120,
-                cwd=str(cwd),
-            )
-            passed, failed, errors = self._parse_test_output(proc.stdout + proc.stderr)
-            return SuiteResult(
-                passed=passed,
-                failed=failed,
-                errors=errors,
-                output=(proc.stdout + proc.stderr)[-2000:],
-            )
-        except subprocess.TimeoutExpired:
-            return SuiteResult(errors=1, output="Test suite timed out after 120s")
-        except FileNotFoundError:
-            return SuiteResult(errors=1, output=f"Test runner not found for: {cmd}")
-
-    def _detect_test_command(self, test_dir: Path, cwd: Path) -> list[str]:
-        """Detect the appropriate test command for the project."""
-        if (cwd / "package.json").exists():
-            return ["npm", "test", "--", "--no-coverage"]
-        if (cwd / "go.mod").exists():
-            return ["go", "test", str(test_dir / "...")]
-        # Default to pytest
-        return ["python", "-m", "pytest", str(test_dir), "-v", "--tb=short"]
-
-    def _parse_test_output(self, output: str) -> tuple[int, int, int]:
-        """Parse test output to extract pass/fail/error counts.
-
-        Returns (passed, failed, errors) tuple. Conservative: if parsing
-        fails, reports 0 passed and 1 error.
-        """
-        passed = failed = errors = 0
-
-        # pytest style: "5 passed, 2 failed, 1 error"
-        import re
-
-        m_passed = re.search(r"(\d+)\s+passed", output)
-        m_failed = re.search(r"(\d+)\s+failed", output)
-        m_errors = re.search(r"(\d+)\s+error", output)
-
-        if m_passed:
-            passed = int(m_passed.group(1))
-        if m_failed:
-            failed = int(m_failed.group(1))
-        if m_errors:
-            errors = int(m_errors.group(1))
-
-        # npm test style
-        if not m_passed and not m_failed:
-            m_npm_pass = re.search(r"Tests:\s+(\d+)\s+passed", output)
-            m_npm_fail = re.search(r"Tests:\s+(\d+)\s+failed", output)
-            if m_npm_pass:
-                passed = int(m_npm_pass.group(1))
-            if m_npm_fail:
-                failed = int(m_npm_fail.group(1))
-
-        return passed, failed, errors
+        suite_name = "eval" if test_dir.name == "_eval" else "visible"
+        report_dir = self.work_dir / "telemetry"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        return run_test_suite(
+            cwd,
+            test_dir,
+            report_dir=report_dir,
+            suite_name=suite_name,
+            runner=subprocess.run,
+        )
 
     # ------------------------------------------------------------------
     # Fixture comparison
@@ -331,7 +274,7 @@ class EvaluatorAgent(BaseAgent):
             result = self.run_executor(
                 copilot_prompt,
                 work_dir=code_dir,
-                allow_tools="shell(*), read",
+                allow_tools="read",
             )
             # Build a CanonicalResponse from copilot output to reuse parser
             response = CanonicalResponse(
@@ -388,11 +331,9 @@ class EvaluatorAgent(BaseAgent):
     ) -> str:
         """Format test results and diff info for the LLM prompt."""
         parts = []
-        parts.append(f"Eval test suite: {eval_test_result.passed} passed, "
-                      f"{eval_test_result.failed} failed, {eval_test_result.errors} errors")
+        parts.append(self._format_suite_summary("Eval test suite", eval_test_result))
         if regression_result:
-            parts.append(f"Regression tests: {regression_result.passed} passed, "
-                          f"{regression_result.failed} failed")
+            parts.append(self._format_suite_summary("Regression tests", regression_result))
         parts.append(f"Fixtures match: {fixture_ok}")
 
         # Include git diff summary if available
@@ -401,6 +342,20 @@ class EvaluatorAgent(BaseAgent):
             parts.append(f"\nGit diff (truncated to 3000 chars):\n{diff[:3000]}")
 
         return "\n".join(parts)
+
+    def _format_suite_summary(self, label: str, result: SuiteResult) -> str:
+        """Summarize harness-run test evidence for the evaluator prompt."""
+        summary = (
+            f"{label}: {result.passed} passed, {result.failed} failed, "
+            f"{result.errors} errors, execution_ok={result.execution_ok}"
+        )
+        if result.framework:
+            summary += f", framework={result.framework}"
+        if result.command:
+            summary += f"\nCommand: {' '.join(result.command)}"
+        if result.output:
+            summary += f"\nOutput excerpt:\n{result.output}"
+        return summary
 
     def _get_git_diff(self, code_dir: Path) -> str:
         """Get git diff of the working directory."""

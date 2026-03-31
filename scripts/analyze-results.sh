@@ -72,7 +72,11 @@ for manifest in "${MANIFESTS[@]}"; do
     [[ "$bm" != "$FILTER_BENCHMARK" ]] && continue
   fi
   if [[ -n "$FILTER_MODEL" ]]; then
-    model=$(echo "$run" | jq -r '.model.model_id')
+    model=$(echo "$run" | jq -r '
+      .model_info[0].model_id
+      // (if (.model | type) == "object" then .model.model_id else .model end)
+      // "unknown"
+    ')
     [[ "$model" != "$FILTER_MODEL" ]] && continue
   fi
 
@@ -104,8 +108,8 @@ COMBOS=$(echo "$ALL_RUNS" | jq -r '[.[] | {benchmark, mode}] | unique | .[] | "\
 
 echo "# Harnessa Benchmark Results"
 echo ""
-echo "| Benchmark | Mode | Model | Runs | Avg Score | Test Pass Rate | Eval Pass Rate | Avg Duration | Verdict |"
-echo "|-----------|------|-------|------|-----------|----------------|----------------|--------------|---------|"
+echo "| Benchmark | Mode | Model | Runs | Validity | Avg Score | Test Pass Rate | Eval Pass Rate | Avg Duration | Verdict |"
+echo "|-----------|------|-------|------|----------|-----------|----------------|----------------|--------------|---------|"
 
 while IFS='|' read -r benchmark mode; do
   [[ -z "$benchmark" ]] && continue
@@ -117,45 +121,59 @@ while IFS='|' read -r benchmark mode; do
   run_count=$(echo "$COMBO_RUNS" | jq 'length')
   [[ "$run_count" -eq 0 ]] && continue
 
-  model_id=$(echo "$COMBO_RUNS" | jq -r '.[0].model.model_id')
+  model_id=$(echo "$COMBO_RUNS" | jq -r '
+    .[0].model_info[0].model_id
+    // (if (.[0].model | type) == "object" then .[0].model.model_id else .[0].model end)
+    // "unknown"
+  ')
+
+  clean_runs=$(echo "$COMBO_RUNS" | jq '[.[] | select((.run_validity // "clean") == "clean")]')
+  clean_count=$(echo "$clean_runs" | jq 'length')
+  tainted_count=$(echo "$COMBO_RUNS" | jq '[.[] | select((.run_validity // "clean") == "tainted")] | length')
+  harness_error_count=$(echo "$COMBO_RUNS" | jq '[.[] | select((.run_validity // "clean") == "harness_error")] | length')
+  validity_label="${clean_count}c/${tainted_count}t/${harness_error_count}h"
 
   # Average score (mean of all 4 criteria across all runs)
-  avg_score=$(echo "$COMBO_RUNS" | jq '
-    [.[] | .evaluator_scores | to_entries | .[].value // 0] |
+  avg_score=$(echo "$clean_runs" | jq '
+    [.[] | (.scores[]?.score // .evaluator_scores?[]? // empty)] |
     if length > 0 then (add / length * 10 | round / 10) else 0 end
   ')
 
   # Visible test pass rate
-  visible_pass_rate=$(echo "$COMBO_RUNS" | jq '
-    [.[] | .visible_tests] |
-    if [.[].total] | add > 0
-    then (([.[].passed] | add) / ([.[].total] | add) * 100 | round)
+  visible_pass_rate=$(echo "$clean_runs" | jq '
+    [.[] | (.visible_tests // {}) | {passed: (.passed // 0), total: (.total // 0)}] as $runs |
+    ([ $runs[].total ] | add // 0) as $total |
+    if $total > 0
+    then (([ $runs[].passed ] | add // 0) / $total * 100 | round)
     else 0 end
   ')
 
   # Eval test pass rate
-  eval_pass_rate=$(echo "$COMBO_RUNS" | jq '
-    [.[] | .eval_tests] |
-    if [.[].total] | add > 0
-    then (([.[].passed] | add) / ([.[].total] | add) * 100 | round)
+  eval_pass_rate=$(echo "$clean_runs" | jq '
+    [.[] | (.eval_tests // {}) | {passed: (.passed // 0), total: (.total // 0)}] as $runs |
+    ([ $runs[].total ] | add // 0) as $total |
+    if $total > 0
+    then (([ $runs[].passed ] | add // 0) / $total * 100 | round)
     else 0 end
   ')
 
   # Average duration
-  avg_duration=$(echo "$COMBO_RUNS" | jq '
-    [.[].total_duration_s] | add / length | round
+  avg_duration=$(echo "$clean_runs" | jq '
+    if length > 0 then ([.[].duration_s // 0] | add / length | round) else 0 end
   ')
 
-  # Verdict: PASS if majority pass
-  pass_count=$(echo "$COMBO_RUNS" | jq '[.[] | select(.verdict == "PASS")] | length')
-  if [[ "$pass_count" -gt $((run_count / 2)) ]]; then
-    verdict="✅ PASS ($pass_count/$run_count)"
+  # Verdict: PASS if majority of clean runs pass
+  pass_count=$(echo "$clean_runs" | jq '[.[] | select(.verdict == "PASS")] | length')
+  if [[ "$clean_count" -eq 0 ]]; then
+    verdict="⚠️ UNTRUSTED"
+  elif [[ "$pass_count" -gt $((clean_count / 2)) ]]; then
+    verdict="✅ PASS ($pass_count/$clean_count)"
   else
-    verdict="❌ FAIL ($pass_count/$run_count)"
+    verdict="❌ FAIL ($pass_count/$clean_count)"
   fi
 
-  printf "| %-30s | %-4s | %-20s | %4s | %9s | %13s%% | %13s%% | %10ss | %s |\n" \
-    "$benchmark" "$mode" "$model_id" "$run_count" "$avg_score" "$visible_pass_rate" "$eval_pass_rate" "$avg_duration" "$verdict"
+  printf "| %-30s | %-4s | %-20s | %4s | %-8s | %9s | %13s%% | %13s%% | %10ss | %s |\n" \
+    "$benchmark" "$mode" "$model_id" "$run_count" "$validity_label" "$avg_score" "$visible_pass_rate" "$eval_pass_rate" "$avg_duration" "$verdict"
 
 done <<< "$COMBOS"
 
@@ -167,12 +185,17 @@ echo ""
 
 total_pass=$(echo "$ALL_RUNS" | jq '[.[] | select(.verdict == "PASS")] | length')
 total_fail=$(echo "$ALL_RUNS" | jq '[.[] | select(.verdict != "PASS")] | length')
-overall_avg=$(echo "$ALL_RUNS" | jq '
-  [.[] | .evaluator_scores | to_entries | .[].value // 0] |
+clean_runs=$(echo "$ALL_RUNS" | jq '[.[] | select((.run_validity // "clean") == "clean")]')
+clean_total=$(echo "$clean_runs" | jq 'length')
+tainted_total=$(echo "$ALL_RUNS" | jq '[.[] | select((.run_validity // "clean") == "tainted")] | length')
+harness_error_total=$(echo "$ALL_RUNS" | jq '[.[] | select((.run_validity // "clean") == "harness_error")] | length')
+overall_avg=$(echo "$clean_runs" | jq '
+  [.[] | (.scores[]?.score // .evaluator_scores?[]? // empty)] |
   if length > 0 then (add / length * 10 | round / 10) else 0 end
 ')
-total_duration=$(echo "$ALL_RUNS" | jq '[.[].total_duration_s] | add')
+total_duration=$(echo "$ALL_RUNS" | jq '[.[].duration_s // 0] | add')
 
 echo "**Overall:** $total_pass passed, $total_fail failed out of $NUM_RUNS runs"
+echo "**Validity:** $clean_total clean, $tainted_total tainted, $harness_error_total harness_error"
 echo "**Average score:** $overall_avg/10"
 echo "**Total wall time:** ${total_duration}s"

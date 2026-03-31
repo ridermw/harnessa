@@ -182,15 +182,16 @@ done
 echo ""
 
 # Extract and compare scores from each run
-CRITERIA=$(jq -r '.evaluator_scores // {} | keys[]' \
+CRITERIA=$(jq -r '.scores[]?.criterion' \
   "$REPO_ROOT/runs/${EVAL_RUN_IDS[0]}/telemetry/run-manifest.json" 2>/dev/null || true)
 
 if [[ -n "$CRITERIA" ]]; then
   for criterion in $CRITERIA; do
     printf "  %-20s" "$criterion"
     for run_id in "${EVAL_RUN_IDS[@]}"; do
-      score=$(jq -r ".evaluator_scores.\"$criterion\" // \"N/A\"" \
+      score=$(jq -r --arg criterion "$criterion" '.scores[]? | select(.criterion == $criterion) | .score' \
         "$REPO_ROOT/runs/$run_id/telemetry/run-manifest.json" 2>/dev/null || echo "N/A")
+      [[ -z "$score" ]] && score="N/A"
       printf " | %-12s" "$score"
     done
     echo ""

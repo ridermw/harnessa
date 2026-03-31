@@ -232,11 +232,16 @@ class TestRunTestSuite:
         code_dir = tmp_path / "code"
         code_dir.mkdir()
 
-        mock_result = MagicMock()
-        mock_result.stdout = "5 passed, 2 failed in 1.23s"
-        mock_result.stderr = ""
+        expected = SuiteResult(
+            passed=5,
+            failed=2,
+            errors=0,
+            total=7,
+            framework="pytest",
+            command=["python", "-m", "pytest", str(eval_dir)],
+        )
 
-        with patch("harnessa.agents.evaluator.subprocess.run", return_value=mock_result):
+        with patch("harnessa.agents.evaluator.run_test_suite", return_value=expected):
             result = agent._run_test_suite(eval_dir, code_dir)
 
         assert result.passed == 5
@@ -252,21 +257,60 @@ class TestRunTestSuite:
         code_dir.mkdir()
 
         with patch(
-            "harnessa.agents.evaluator.subprocess.run",
-            side_effect=sp.TimeoutExpired(cmd=["pytest"], timeout=120),
+            "harnessa.agents.evaluator.run_test_suite",
+            return_value=SuiteResult(errors=1, output="Test suite timed out after 120s", execution_ok=False),
         ):
             result = agent._run_test_suite(eval_dir, code_dir)
 
         assert result.errors == 1
         assert "timed out" in result.output.lower()
 
-    def test_npm_test_detected(self, agent: EvaluatorAgent, tmp_path: Path) -> None:
-        code_dir = tmp_path / "code"
-        code_dir.mkdir()
-        (code_dir / "package.json").write_text("{}", encoding="utf-8")
 
-        cmd = agent._detect_test_command(tmp_path, code_dir)
-        assert "npm" in cmd
+class TestPromptContext:
+    def test_format_context_includes_harness_metadata(
+        self, agent: EvaluatorAgent, tmp_path: Path
+    ) -> None:
+        eval_result = SuiteResult(
+            passed=3,
+            failed=1,
+            errors=0,
+            total=4,
+            framework="pytest",
+            command=["python", "-m", "pytest", "_eval"],
+            output="1 failed in 0.3s",
+            execution_ok=True,
+        )
+        regression_result = SuiteResult(
+            passed=5,
+            failed=0,
+            errors=0,
+            total=5,
+            framework="pytest",
+            command=["python", "-m", "pytest", "tests"],
+            output="5 passed in 0.4s",
+            execution_ok=True,
+        )
+
+        context = agent._format_context(tmp_path, eval_result, regression_result, fixture_ok=True)
+
+        assert "execution_ok=True" in context
+        assert "framework=pytest" in context
+        assert "Command: python -m pytest _eval" in context
+        assert "Output excerpt:" in context
+
+    def test_copilot_delegation_uses_read_only_tools(
+        self, tmp_path: Path, sample_criteria: list[Criterion]
+    ) -> None:
+        agent = EvaluatorAgent(model_id="copilot/claude-sonnet-4", work_dir=tmp_path)
+        eval_result = SuiteResult(passed=4, failed=0, total=4)
+
+        with patch.object(agent, "_parse_llm_response", return_value=EvaluationResult()) as mock_parse, \
+             patch.object(agent, "run_executor", return_value=MagicMock(stdout='{"scores":[],"bugs":[]}', model="claude-sonnet-4")) as mock_exec:
+            agent._llm_grade(sample_criteria, tmp_path, eval_result, None, True, iteration=1)
+
+        mock_parse.assert_called_once()
+        _, kwargs = mock_exec.call_args
+        assert kwargs["allow_tools"] == "read"
 
 
 # ---------------------------------------------------------------------------
@@ -346,10 +390,10 @@ class TestGradeIntegration:
                 cost=0.01,
                 truncated=False,
             ),
-        ), patch("harnessa.agents.evaluator.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                stdout="2 passed in 0.5s", stderr="", returncode=0
-            )
+        ), patch(
+            "harnessa.agents.evaluator.run_test_suite",
+            return_value=SuiteResult(passed=2, failed=0, total=2),
+        ):
             result = agent.grade(code_dir, eval_dir, criteria_file, output_dir)
 
         assert result.verdict == Verdict.PASS
@@ -369,10 +413,10 @@ class TestGradeIntegration:
 
         with patch.object(
             agent, "call_llm", side_effect=RuntimeError("LLM down")
-        ), patch("harnessa.agents.evaluator.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(
-                stdout="3 passed, 1 failed in 0.5s", stderr="", returncode=1
-            )
+        ), patch(
+            "harnessa.agents.evaluator.run_test_suite",
+            return_value=SuiteResult(passed=3, failed=1, total=4),
+        ):
             result = agent.grade(code_dir, eval_dir, criteria_file, output_dir)
 
         assert result.degraded_evaluation is True

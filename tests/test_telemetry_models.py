@@ -12,8 +12,10 @@ from harnessa.telemetry.models import (
     DifficultyZone,
     ModelInfo,
     QualityTrend,
+    RunValidity,
     RunManifest,
     Severity,
+    SuiteResult,
     SprintMetrics,
 )
 
@@ -106,3 +108,43 @@ def test_run_manifest() -> None:
     assert m.run_id == "test-run-001"
     assert len(m.agents) == 1
     assert m.harness_version == "0.1.0"
+
+
+def test_suite_result_computes_total_from_pass_fail() -> None:
+    """SuiteResult backfills total when omitted."""
+    result = SuiteResult(passed=3, failed=2)
+    assert result.total == 5
+
+
+def test_run_manifest_accepts_validity_and_test_evidence() -> None:
+    """RunManifest stores shared suite evidence and trust state."""
+    manifest = RunManifest(
+        run_id="test-run-002",
+        benchmark="todo-app",
+        mode="solo",
+        model_info=[ModelInfo(provider="openai", model_id="gpt-4")],
+        scores=[BenchmarkScore(criterion="Functionality", score=7.0, justification="Works well")],
+        visible_tests=SuiteResult(
+            passed=5,
+            failed=1,
+            framework="pytest",
+            command=["python", "-m", "pytest", "tests"],
+            report_path="runs/test/visible-report.xml",
+        ),
+        eval_tests=SuiteResult(
+            passed=3,
+            failed=0,
+            framework="pytest",
+            command=["python", "-m", "pytest", "_eval"],
+            report_path="runs/test/eval-report.xml",
+        ),
+        run_validity=RunValidity.CLEAN,
+        cost_usd=0.01,
+        duration_s=45.0,
+        started_at=datetime(2025, 1, 1, 12, 0, 0),
+    )
+
+    assert manifest.run_validity == RunValidity.CLEAN
+    assert manifest.visible_tests is not None
+    assert manifest.visible_tests.total == 6
+    assert manifest.eval_tests is not None

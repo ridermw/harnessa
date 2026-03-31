@@ -21,7 +21,13 @@ from harnessa.agents.planner import PlannerAgent
 from harnessa.config import RunConfig, RunMode
 from harnessa.criteria.loader import CriteriaLoader
 from harnessa.reconciler import ScoreReconciler
-from harnessa.telemetry.models import AgentMetrics, BenchmarkScore, ContractMetrics, RunManifest
+from harnessa.telemetry.models import (
+    AgentMetrics,
+    BenchmarkScore,
+    ContractMetrics,
+    RunManifest,
+    RunValidity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +58,7 @@ class Orchestrator:
         self._isolation = IsolationManager()
         self._original_sigint: signal.Handlers | None = None
         self._reconciled_result: Any = None
+        self._last_eval_result: EvaluationResult | None = None
 
     def start_run(self) -> RunManifest:
         """Execute the full pipeline and return the RunManifest."""
@@ -88,6 +95,7 @@ class Orchestrator:
         verdict = "FAIL"
         sprints: list = []
         contract_metrics: ContractMetrics | None = None
+        self._last_eval_result = None
 
         try:
             if self.config.mode == RunMode.TRIO:
@@ -141,6 +149,9 @@ class Orchestrator:
             bugs=final_bugs,
             sprints=sprints,
             contract_metrics=contract_metrics,
+            visible_tests=self._last_eval_result.regression_result if self._last_eval_result else None,
+            eval_tests=self._last_eval_result.test_suite_result if self._last_eval_result else None,
+            run_validity=self._derive_run_validity(self._last_eval_result),
             cost_usd=total_cost,
             duration_s=round(total_duration, 2),
             verdict=verdict,
@@ -220,6 +231,7 @@ class Orchestrator:
             reconciler = ScoreReconciler()
             reconciled = reconciler.reconcile(eval_results[0], eval_results[1])
             self._reconciled_result = reconciled
+            self._last_eval_result = eval_results[0]
             return (
                 reconciled.verdict.value,
                 reconciled.final_scores,
@@ -228,6 +240,7 @@ class Orchestrator:
             )
 
         self._reconciled_result = None
+        self._last_eval_result = eval_results[0]
         return (
             eval_results[0].verdict.value,
             eval_results[0].scores,
@@ -339,6 +352,7 @@ class Orchestrator:
                 current_verdict = eval_results[0].verdict.value
 
             final_eval = eval_results[0]
+            self._last_eval_result = final_eval
 
             from harnessa.telemetry.models import SprintMetrics
             sprints.append(SprintMetrics(
@@ -385,6 +399,19 @@ class Orchestrator:
             all_metrics,
             contract_metrics,
         )
+
+    def _derive_run_validity(self, result: EvaluationResult | None) -> RunValidity:
+        """Determine whether the final verdict is backed by trustworthy test evidence."""
+        if result is None:
+            return RunValidity.TAINTED
+
+        suites = [result.test_suite_result]
+        if result.regression_result is not None:
+            suites.append(result.regression_result)
+
+        if any(suite is not None and not suite.execution_ok for suite in suites):
+            return RunValidity.HARNESS_ERROR
+        return RunValidity.CLEAN
 
     # ------------------------------------------------------------------
     # Agent launcher

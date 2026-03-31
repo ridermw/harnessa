@@ -36,6 +36,14 @@ class DifficultyZone(StrEnum):
     MARGINAL = "marginal"
 
 
+class RunValidity(StrEnum):
+    """Whether a run's verdict is trustworthy."""
+
+    CLEAN = "clean"
+    TAINTED = "tainted"
+    HARNESS_ERROR = "harness_error"
+
+
 class ModelInfo(BaseModel):
     """LLM provider and model configuration."""
 
@@ -144,6 +152,27 @@ class ContractMetrics(BaseModel):
     duration_s: float = Field(ge=0.0)
 
 
+class SuiteResult(BaseModel):
+    """Result of running a single visible or hidden test suite."""
+
+    model_config = {"strict": True}
+
+    passed: int = Field(default=0, ge=0)
+    failed: int = Field(default=0, ge=0)
+    errors: int = Field(default=0, ge=0)
+    total: int = Field(default=0, ge=0)
+    output: str = Field(default="", description="Capped stdout/stderr excerpt")
+    framework: str = Field(default="", description="Detected test framework")
+    command: list[str] = Field(default_factory=list, description="Executed command")
+    exit_code: int = Field(default=0)
+    report_path: str = Field(default="", description="Machine-readable result artifact path")
+    execution_ok: bool = Field(default=True, description="False when the harness could not trust the suite result")
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.total == 0:
+            object.__setattr__(self, "total", self.passed + self.failed)
+
+
 class RunManifest(BaseModel):
     """Top-level run metadata and results — the canonical output artifact."""
 
@@ -165,6 +194,13 @@ class RunManifest(BaseModel):
     contract_metrics: ContractMetrics | None = Field(
         default=None, description="Contract negotiation metrics (trio mode only)"
     )
+    planner_duration_s: float | None = Field(default=None, ge=0.0)
+    generator_duration_s: float | None = Field(default=None, ge=0.0)
+    evaluator_duration_s: float | None = Field(default=None, ge=0.0)
+    iterations: int | None = Field(default=None, ge=1)
+    visible_tests: SuiteResult | None = Field(default=None)
+    eval_tests: SuiteResult | None = Field(default=None)
+    run_validity: RunValidity = Field(default=RunValidity.CLEAN)
     cost_usd: float = Field(default=0.0, ge=0.0)
     duration_s: float = Field(default=0.0, ge=0.0)
     verdict: str = Field(default="", description="Overall PASS/FAIL verdict")

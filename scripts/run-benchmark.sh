@@ -50,104 +50,123 @@ generate_uuid() {
   fi
 }
 
-package_json_script() {
-  local script_name="$1"
-  jq -r --arg script_name "$script_name" '.scripts[$script_name] // empty' package.json
+run_suite_json() {
+  local cwd="$1"
+  local test_dir="$2"
+  local suite_name="$3"
+
+  PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
+    python -m harnessa.test_execution run-suite \
+      --cwd "$cwd" \
+      --test-dir "$test_dir" \
+      --report-dir "$TELEMETRY_DIR" \
+      --suite-name "$suite_name"
 }
 
-ensure_vitest_eval_config() {
-  local config_path=".harnessa-vitest-eval.config.mjs"
+write_canonical_manifest() {
+  PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
+    python - <<'PY'
+import json
+import os
+from datetime import datetime
+from pathlib import Path
 
-  if [[ ! -f "$config_path" ]]; then
-    cat > "$config_path" <<'EOF'
-import { defineConfig } from 'vitest/config'
+from harnessa.telemetry.models import (
+    BenchmarkScore,
+    BugReport,
+    ModelInfo,
+    RunManifest,
+    RunValidity,
+    Severity,
+    SuiteResult,
+)
 
-export default defineConfig({
-  test: {
-    include: ['_eval/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    environment: 'node',
-  },
-})
-EOF
-  fi
 
-  echo "$config_path"
-}
+def parse_timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
-node_test_command() {
-  local test_dir="${1:-tests}"
-  local test_script
-  local eval_script
-  local eval_config
 
-  test_script="$(package_json_script test)"
-  eval_script="$(package_json_script test:eval)"
+def coerce_scores(raw_scores: object) -> list[BenchmarkScore]:
+    if isinstance(raw_scores, dict):
+        return [
+            BenchmarkScore(criterion=criterion, score=float(score), justification="")
+            for criterion, score in raw_scores.items()
+        ]
 
-  if [[ "$test_dir" == "_eval" ]]; then
-    if [[ -n "$eval_script" ]]; then
-      echo "npm run test:eval -- --runInBand"
-    elif echo "$test_script" | grep -qi 'vitest'; then
-      eval_config="$(ensure_vitest_eval_config)"
-      echo "npx --yes vitest run --config $eval_config"
-    elif echo "$test_script" | grep -qi 'jest' && [[ -f "_eval/jest.config.js" ]]; then
-      echo "npx jest --config _eval/jest.config.js --runInBand"
-    else
-      echo "npm test"
-    fi
-  else
-    if echo "$test_script" | grep -qi 'jest'; then
-      echo "npm test -- --runInBand"
-    elif echo "$test_script" | grep -qi 'vitest'; then
-      echo "npm test -- --reporter=verbose"
-    else
-      echo "npm test"
-    fi
-  fi
-}
+    scores: list[BenchmarkScore] = []
+    for entry in raw_scores if isinstance(raw_scores, list) else []:
+        scores.append(
+            BenchmarkScore(
+                criterion=str(entry.get("criterion", "Unknown")),
+                score=float(entry.get("score", 0)),
+                justification=str(entry.get("justification", "")),
+            )
+        )
+    return scores
 
-# Detect the test runner for a workspace directory and run tests.
-# Usage: run_tests <workspace_dir> [test_dir]
-# Prints JSON: {"passed": N, "failed": N, "total": N}
-run_tests() {
-  local dir="$1"
-  local test_dir="${2:-tests}"
-  local output
-  local test_cmd
-  local passed=0 failed=0 total=0
 
-  pushd "$dir" >/dev/null
+def coerce_bug(index: int, raw_bug: object) -> BugReport:
+    if isinstance(raw_bug, str):
+        return BugReport(
+            id=f"bug-{index}",
+            severity=Severity.MEDIUM,
+            description=raw_bug,
+            file="",
+            line=0,
+        )
 
-  if [[ -f "package.json" ]]; then
-    # Node.js project — respect benchmark-defined visible vs hidden test commands.
-    test_cmd="$(node_test_command "$test_dir")"
-    output=$(eval "$test_cmd" 2>&1) || true
-    # Parse vitest/jest output: "Tests  X passed | Y failed"
-    passed=$(echo "$output" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "0")
-    failed=$(echo "$output" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo "0")
-  elif [[ -f "go.mod" ]] || ls ./*.go >/dev/null 2>&1; then
-    # Go project
-    output=$(go test ./... -v 2>&1) || true
-    passed=$(echo "$output" | grep -c '^--- PASS' || echo "0")
-    failed=$(echo "$output" | grep -c '^--- FAIL' || echo "0")
-  else
-    # Default: Python / pytest
-    if [[ -d "$test_dir" ]]; then
-      output=$(python -m pytest "$test_dir" -q 2>&1) || true
-      # Parse pytest output: "X passed, Y failed" or "X passed"
-      passed=$(echo "$output" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo "0")
-      failed=$(echo "$output" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo "0")
-    fi
-  fi
+    severity = str(raw_bug.get("severity", "medium")).lower()
+    if severity not in {"critical", "high", "medium", "low"}:
+        severity = "medium"
 
-  # Ensure numeric — strip whitespace and take only first number
-  passed=$(echo "$passed" | tr -d '[:space:]' | head -c 10)
-  failed=$(echo "$failed" | tr -d '[:space:]' | head -c 10)
-  passed=$((${passed:-0} + 0))
-  failed=$((${failed:-0} + 0))
-  total=$((passed + failed))
+    raw_line = raw_bug.get("line", 0)
+    try:
+        line = int(raw_line or 0)
+    except (TypeError, ValueError):
+        line = 0
 
-  popd >/dev/null
-  echo "{\"passed\": $passed, \"failed\": $failed, \"total\": $total}"
+    return BugReport(
+        id=str(raw_bug.get("id", f"bug-{index}")),
+        severity=Severity(severity),
+        description=str(raw_bug.get("description", "Unspecified issue")),
+        file=str(raw_bug.get("file", "")),
+        line=line,
+    )
+
+
+raw_scores = json.loads(os.environ["EVAL_SCORES"])
+raw_bugs = json.loads(os.environ["BUGS"])
+visible_tests = SuiteResult.model_validate(json.loads(os.environ["VISIBLE_TESTS"]))
+eval_tests = SuiteResult.model_validate(json.loads(os.environ["EVAL_TESTS"]))
+
+model_info = [ModelInfo(provider="copilot-cli", model_id=os.environ["MODEL"])]
+if os.environ["EVAL_MODEL"] != os.environ["MODEL"]:
+    model_info.append(ModelInfo(provider="copilot-cli", model_id=os.environ["EVAL_MODEL"]))
+
+manifest = RunManifest(
+    run_id=os.environ["RUN_ID"],
+    benchmark=os.environ["BENCHMARK"],
+    mode=os.environ["MODE"],
+    model_info=model_info,
+    scores=coerce_scores(raw_scores),
+    bugs=[coerce_bug(index, raw_bug) for index, raw_bug in enumerate(raw_bugs, start=1)],
+    planner_duration_s=float(os.environ["PLANNER_DURATION"]),
+    generator_duration_s=float(os.environ["GENERATOR_DURATION"]),
+    evaluator_duration_s=float(os.environ["EVALUATOR_DURATION"]),
+    iterations=int(os.environ["ITERATIONS"]),
+    visible_tests=visible_tests,
+    eval_tests=eval_tests,
+    run_validity=RunValidity(os.environ["RUN_VALIDITY"]),
+    cost_usd=0.0,
+    duration_s=float(os.environ["TOTAL_DURATION"]),
+    verdict=os.environ["VERDICT"],
+    started_at=parse_timestamp(os.environ["START_TIMESTAMP"]),
+    finished_at=parse_timestamp(os.environ["END_TIMESTAMP"]),
+)
+
+manifest_path = Path(os.environ["MANIFEST_PATH"])
+manifest_path.write_text(manifest.model_dump_json(indent=2), encoding="utf-8")
+PY
 }
 
 # Extract JSON from evaluator output (finds first { ... } block)
@@ -270,15 +289,18 @@ fi
 
 # Record start time
 START_TIME=$(date +%s)
-TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+START_TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 PLANNER_DURATION=0
 GENERATOR_DURATION=0
 EVALUATOR_DURATION=0
 ITERATIONS=0
+RUN_VALIDITY="clean"
 VERDICT="INCOMPLETE"
-EVAL_SCORES='{}'
+EVAL_SCORES='[]'
 BUGS='[]'
+VISIBLE_TESTS='null'
+EVAL_TESTS='null'
 
 # ---------------------------------------------------------------------------
 # SOLO mode
@@ -412,37 +434,42 @@ run_evaluator() {
   log "Running evaluator..."
 
   local eval_start eval_end eval_output eval_json
-  local visible_test_cmd hidden_test_cmd
-
-  # Temporarily copy _eval/ into workspace for the evaluator
-  cp -R "$EVAL_DIR" "$WORKSPACE/_eval" 2>/dev/null || true
+  local visible_summary hidden_summary
 
   eval_start=$(date +%s)
 
-  local eval_prompt="IMPORTANT: Your ENTIRE response must be a single JSON object. No text before or after it. No markdown formatting. No explanation. "
-  eval_prompt+="You are a skeptical code evaluator grading an AI-generated solution. "
-  eval_prompt+="Run the visible tests in the tests/ directory. "
-  eval_prompt+="Run the hidden acceptance tests in the _eval/ directory against the code. "
+  log "Running visible tests..."
+  VISIBLE_TESTS=$(run_suite_json "$WORKSPACE" "$WORKSPACE/tests" "visible-tests")
 
-  if [[ -f "$WORKSPACE/package.json" ]]; then
-    visible_test_cmd="$(cd "$WORKSPACE" && node_test_command "tests")"
-    hidden_test_cmd="$(cd "$WORKSPACE" && node_test_command "_eval")"
-    eval_prompt+="This is a Node.js/TypeScript project — use '$visible_test_cmd' for visible tests and '$hidden_test_cmd' for hidden tests. "
-  elif [[ -f "$WORKSPACE/go.mod" ]] || ls "$WORKSPACE"/*.go >/dev/null 2>&1; then
-    eval_prompt+="This is a Go project — use 'go test ./...' for visible and 'go test ./_eval/...' for hidden tests. "
-  else
-    eval_prompt+="This is a Python project — use 'python -m pytest tests/' for visible and 'python -m pytest _eval/' for hidden tests. "
+  log "Running hidden eval tests..."
+  EVAL_TESTS=$(run_suite_json "$WORKSPACE" "$EVAL_DIR" "eval-tests")
+
+  if ! echo "$VISIBLE_TESTS" | jq -e '.execution_ok == true' >/dev/null 2>&1; then
+    RUN_VALIDITY="harness_error"
+  fi
+  if ! echo "$EVAL_TESTS" | jq -e '.execution_ok == true' >/dev/null 2>&1; then
+    RUN_VALIDITY="harness_error"
   fi
 
+  visible_summary=$(echo "$VISIBLE_TESTS" | jq '.')
+  hidden_summary=$(echo "$EVAL_TESTS" | jq '.')
+
+  local eval_prompt="IMPORTANT: Your ENTIRE response must be a single JSON object. No text before or after it. No markdown formatting. No explanation. "
+  eval_prompt+="You are a skeptical code evaluator grading an AI-generated solution. "
+  eval_prompt+="The harness has already executed the visible and hidden test suites. "
+  eval_prompt+="Do NOT run benchmark tests yourself. Use only the harness evidence below when judging functionality and test coverage. "
+  eval_prompt+="Visible test evidence:\n$visible_summary\n\n"
+  eval_prompt+="Hidden evaluation evidence:\n$hidden_summary\n\n"
   eval_prompt+="Grade the solution on 4 criteria (1-10 each): "
   eval_prompt+="product_depth (does it fully solve the task?), "
   eval_prompt+="functionality (do tests pass? does the code work?), "
   eval_prompt+="code_quality (clean, minimal, idiomatic?), "
   eval_prompt+="test_coverage (are edge cases handled?). "
-  eval_prompt+="Only run the automated test commands described above. Do not start dev servers, watchers, or manual demos. "
+  eval_prompt+="Return bugs as objects with fields: id, severity, description, file, line. "
+  eval_prompt+="Do not start dev servers, watchers, or manual demos. "
   eval_prompt+="Be harsh and objective. Any criterion below 6 means overall FAIL. "
-  eval_prompt+="After running tests and analyzing the code, respond with ONLY this JSON (no other text): "
-  eval_prompt+='{\"scores\": {\"product_depth\": N, \"functionality\": N, \"code_quality\": N, \"test_coverage\": N}, '
+  eval_prompt+="After analyzing the code and harness evidence, respond with ONLY this JSON (no other text): "
+  eval_prompt+='{\"scores\": [{\"criterion\": \"product_depth\", \"score\": N, \"justification\": \"...\"}, {\"criterion\": \"functionality\", \"score\": N, \"justification\": \"...\"}, {\"criterion\": \"code_quality\", \"score\": N, \"justification\": \"...\"}, {\"criterion\": \"test_coverage\", \"score\": N, \"justification\": \"...\"}], '
   eval_prompt+='\"verdict\": \"PASS\", '
   eval_prompt+='\"bugs\": [], '
   eval_prompt+='\"justification\": \"one sentence per criterion\"}'
@@ -450,16 +477,13 @@ run_evaluator() {
 
   eval_output=$(cd "$WORKSPACE" && copilot -p "$eval_prompt" \
     -s --no-ask-user --model "$EVAL_MODEL" \
-    --allow-tool='shell(*), read' --allow-all-paths 2>&1) || {
-    err "Evaluator failed"
-    echo "$eval_output" > "$EVALUATIONS_DIR/eval-raw${iteration_label:+-iter$iteration_label}.txt"
-  }
+    --allow-tool='read' --allow-all-paths 2>&1) || {
+      err "Evaluator failed"
+      echo "$eval_output" > "$EVALUATIONS_DIR/eval-raw${iteration_label:+-iter$iteration_label}.txt"
+    }
 
   eval_end=$(date +%s)
   EVALUATOR_DURATION=$((EVALUATOR_DURATION + eval_end - eval_start))
-
-  # Remove _eval/ from workspace immediately
-  rm -rf "$WORKSPACE/_eval"
 
   # Save raw output
   echo "$eval_output" > "$EVALUATIONS_DIR/eval-raw${iteration_label:+-iter$iteration_label}.txt"
@@ -475,25 +499,67 @@ run_evaluator() {
       ($bugs | test("permission denied|cannot run tests|could not run tests|execution was blocked")) or
       ($justification | test("permission denied|cannot run tests|could not run tests|execution was blocked"))
     ' >/dev/null 2>&1; then
+      RUN_VALIDITY="tainted"
       eval_json=$(echo "$eval_json" | jq '
         .verdict = "FAIL"
-        | .scores.functionality = 1
-        | .scores.test_coverage = 1
-        | .bugs = ((.bugs // []) + ["Harness blocked or skipped evaluator test execution"])
+        | .scores = (
+            (.scores // [])
+            | map(
+                if (.criterion == "functionality") or (.criterion == "test_coverage")
+                then .score = 1 | .justification = "Harness evidence was not trusted; forced low score."
+                else .
+                end
+              )
+          )
+        | .bugs = ((.bugs // []) + [{"id": "harness-tainted", "severity": "medium", "description": "Evaluator claimed benchmark tests could not be run despite harness evidence being supplied.", "file": "", "line": 0}])
+      ')
+    fi
+
+    if echo "$VISIBLE_TESTS" | jq -e '.failed > 0 or .errors > 0' >/dev/null 2>&1 || \
+       echo "$EVAL_TESTS" | jq -e '.failed > 0 or .errors > 0' >/dev/null 2>&1; then
+      eval_json=$(echo "$eval_json" | jq '
+        .verdict = "FAIL"
+        | .scores = (
+            (.scores // [])
+            | map(
+                if (.criterion == "functionality") or (.criterion == "test_coverage")
+                then
+                  .score = (if .score > 5 then 5 else .score end)
+                  | .justification = ((.justification // "") + " Clamped by harness because automated tests did not fully pass.")
+                else .
+                end
+              )
+          )
+      ')
+    fi
+
+    if [[ "$RUN_VALIDITY" != "clean" ]]; then
+      eval_json=$(echo "$eval_json" | jq '
+        .verdict = "FAIL"
+        | .scores = (
+            (.scores // [])
+            | map(
+                if (.criterion == "functionality") or (.criterion == "test_coverage")
+                then .score = 1 | .justification = "Harness could not trust the test evidence."
+                else .
+                end
+              )
+          )
       ')
     fi
 
     echo "$eval_json" | jq . > "$EVALUATIONS_DIR/eval.json"
     VERDICT=$(echo "$eval_json" | jq -r '.verdict // "FAIL"')
-    EVAL_SCORES=$(echo "$eval_json" | jq -c '.scores // {}')
+    EVAL_SCORES=$(echo "$eval_json" | jq -c '.scores // []')
     BUGS=$(echo "$eval_json" | jq -c '.bugs // []')
     log "Evaluator verdict: $VERDICT"
     log "Scores: $EVAL_SCORES"
   else
     err "Could not parse evaluator JSON output"
-    echo '{"scores": {}, "verdict": "FAIL", "bugs": [], "justification": "Failed to parse evaluator output"}' > "$EVALUATIONS_DIR/eval.json"
+    RUN_VALIDITY="tainted"
+    echo '{"scores": [], "verdict": "FAIL", "bugs": [], "justification": "Failed to parse evaluator output"}' > "$EVALUATIONS_DIR/eval.json"
     VERDICT="FAIL"
-    EVAL_SCORES='{}'
+    EVAL_SCORES='[]'
     BUGS='[]'
   fi
 }
@@ -513,52 +579,24 @@ esac
 
 END_TIME=$(date +%s)
 TOTAL_DURATION=$((END_TIME - START_TIME))
+END_TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+MANIFEST_PATH="$TELEMETRY_DIR/run-manifest.json"
 
-log "Running visible tests..."
-VISIBLE_TESTS=$(run_tests "$WORKSPACE" "tests")
+if [[ "$VISIBLE_TESTS" == "null" ]]; then
+  RUN_VALIDITY="harness_error"
+  VISIBLE_TESTS='{"passed":0,"failed":0,"errors":1,"total":0,"output":"Visible tests never ran.","framework":"","command":[],"exit_code":1,"report_path":"","execution_ok":false}'
+fi
 
-log "Running hidden eval tests..."
-# Copy _eval/ in, run, remove
-cp -R "$EVAL_DIR" "$WORKSPACE/_eval" 2>/dev/null || true
-EVAL_TESTS=$(run_tests "$WORKSPACE" "_eval")
-rm -rf "$WORKSPACE/_eval"
+if [[ "$EVAL_TESTS" == "null" ]]; then
+  RUN_VALIDITY="harness_error"
+  EVAL_TESTS='{"passed":0,"failed":0,"errors":1,"total":0,"output":"Hidden eval tests never ran.","framework":"","command":[],"exit_code":1,"report_path":"","execution_ok":false}'
+fi
 
-# Build run manifest
-jq -n \
-  --arg run_id "$RUN_ID" \
-  --arg benchmark "$BENCHMARK" \
-  --arg mode "$MODE" \
-  --arg model_id "$MODEL" \
-  --arg eval_model_id "$EVAL_MODEL" \
-  --argjson planner_duration "$PLANNER_DURATION" \
-  --argjson generator_duration "$GENERATOR_DURATION" \
-  --argjson evaluator_duration "$EVALUATOR_DURATION" \
-  --argjson total_duration "$TOTAL_DURATION" \
-  --argjson iterations "$ITERATIONS" \
-  --argjson visible_tests "$VISIBLE_TESTS" \
-  --argjson eval_tests "$EVAL_TESTS" \
-  --argjson evaluator_scores "$EVAL_SCORES" \
-  --arg verdict "$VERDICT" \
-  --argjson bugs "$BUGS" \
-  --arg timestamp "$TIMESTAMP" \
-  '{
-    run_id: $run_id,
-    benchmark: $benchmark,
-    mode: $mode,
-    model: { provider: "copilot-cli", model_id: $model_id },
-    eval_model: { provider: "copilot-cli", model_id: $eval_model_id },
-    planner_duration_s: $planner_duration,
-    generator_duration_s: $generator_duration,
-    evaluator_duration_s: $evaluator_duration,
-    total_duration_s: $total_duration,
-    iterations: $iterations,
-    visible_tests: $visible_tests,
-    eval_tests: $eval_tests,
-    evaluator_scores: $evaluator_scores,
-    verdict: $verdict,
-    bugs: $bugs,
-    timestamp: $timestamp
-  }' > "$TELEMETRY_DIR/run-manifest.json"
+export RUN_ID BENCHMARK MODE MODEL EVAL_MODEL PLANNER_DURATION GENERATOR_DURATION
+export EVALUATOR_DURATION TOTAL_DURATION ITERATIONS VERDICT EVAL_SCORES BUGS
+export VISIBLE_TESTS EVAL_TESTS RUN_VALIDITY START_TIMESTAMP END_TIMESTAMP MANIFEST_PATH
+
+write_canonical_manifest
 
 log "Telemetry saved to $TELEMETRY_DIR/run-manifest.json"
 
@@ -577,8 +615,9 @@ echo "  Eval Model:   $EVAL_MODEL"
 echo "  Run ID:       $RUN_ID"
 echo "  Iterations:   $ITERATIONS"
 echo "  Duration:     ${TOTAL_DURATION}s"
+echo "  Validity:     $RUN_VALIDITY"
 echo "  Visible tests: $(echo "$VISIBLE_TESTS" | jq -r '"\(.passed)/\(.total) passed"')"
 echo "  Eval tests:    $(echo "$EVAL_TESTS" | jq -r '"\(.passed)/\(.total) passed"')"
-echo "  Scores:       $EVAL_SCORES"
+echo "  Scores:       $(echo "$EVAL_SCORES" | jq -c 'map({(.criterion): .score}) | add // {}')"
 echo "  Verdict:      $VERDICT"
 echo "=============================================="

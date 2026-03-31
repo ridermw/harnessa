@@ -63,6 +63,14 @@ run_suite_json() {
       --suite-name "$suite_name"
 }
 
+install_node_dependencies() {
+  local message="$1"
+  if [[ -f "$WORKSPACE/package.json" ]]; then
+    log "$message"
+    (cd "$WORKSPACE" && npm install --quiet 2>/dev/null) || true
+  fi
+}
+
 write_canonical_manifest() {
   PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
     python - <<'PY'
@@ -75,9 +83,11 @@ from harnessa.telemetry.models import (
     BenchmarkScore,
     BugReport,
     ModelInfo,
+    QualityTrend,
     RunManifest,
     RunValidity,
     Severity,
+    SprintMetrics,
     SuiteResult,
 )
 
@@ -134,10 +144,31 @@ def coerce_bug(index: int, raw_bug: object) -> BugReport:
     )
 
 
+def coerce_sprints(raw_sprints: object) -> list[SprintMetrics]:
+    sprints: list[SprintMetrics] = []
+    for entry in raw_sprints if isinstance(raw_sprints, list) else []:
+        sprints.append(SprintMetrics.model_validate(entry))
+    return sprints
+
+
+def build_quality_trends(sprints: list[SprintMetrics]) -> list[QualityTrend]:
+    criterion_scores: dict[str, list[float]] = {}
+    for sprint in sprints:
+        for score in sprint.scores:
+            criterion_scores.setdefault(score.criterion, []).append(float(score.score))
+    return [
+        QualityTrend(criterion=criterion, scores=scores)
+        for criterion, scores in sorted(criterion_scores.items())
+    ]
+
+
 raw_scores = json.loads(os.environ["EVAL_SCORES"])
 raw_bugs = json.loads(os.environ["BUGS"])
+raw_sprints = json.loads(os.environ.get("SPRINTS_JSON", "[]"))
 visible_tests = SuiteResult.model_validate(json.loads(os.environ["VISIBLE_TESTS"]))
 eval_tests = SuiteResult.model_validate(json.loads(os.environ["EVAL_TESTS"]))
+sprints = coerce_sprints(raw_sprints)
+quality_trends = build_quality_trends(sprints)
 
 model_info = [ModelInfo(provider="copilot-cli", model_id=os.environ["MODEL"])]
 if os.environ["EVAL_MODEL"] != os.environ["MODEL"]:
@@ -150,6 +181,8 @@ manifest = RunManifest(
     model_info=model_info,
     scores=coerce_scores(raw_scores),
     bugs=[coerce_bug(index, raw_bug) for index, raw_bug in enumerate(raw_bugs, start=1)],
+    quality_trends=quality_trends,
+    sprints=sprints,
     planner_duration_s=float(os.environ["PLANNER_DURATION"]),
     generator_duration_s=float(os.environ["GENERATOR_DURATION"]),
     evaluator_duration_s=float(os.environ["EVALUATOR_DURATION"]),
@@ -166,6 +199,153 @@ manifest = RunManifest(
 
 manifest_path = Path(os.environ["MANIFEST_PATH"])
 manifest_path.write_text(manifest.model_dump_json(indent=2), encoding="utf-8")
+PY
+}
+
+append_sprint_metric() {
+  local iteration="$1"
+  local duration_s="$2"
+  local sprint_entry
+
+  sprint_entry=$(jq -cn \
+    --argjson iteration "$iteration" \
+    --argjson scores "$EVAL_SCORES" \
+    --argjson bugs "$BUGS" \
+    --argjson duration "$duration_s" \
+    '{iteration: $iteration, scores: $scores, bugs_found: ($bugs | length), duration_s: $duration}') || return 1
+
+  SPRINTS_JSON=$(echo "$SPRINTS_JSON" | jq -c --argjson entry "$sprint_entry" '. + [$entry]')
+}
+
+write_iteration_feedback() {
+  local iteration="$1"
+  local feedback_path="$GENERATOR_DIR/feedback_iter${iteration}.md"
+
+  ITERATION_LABEL="$iteration" \
+  FEEDBACK_PATH="$feedback_path" \
+  EVAL_JSON_PATH="$EVALUATIONS_DIR/eval.json" \
+  RUN_VALIDITY_VALUE="$RUN_VALIDITY" \
+  VISIBLE_TESTS_JSON="$VISIBLE_TESTS" \
+  EVAL_TESTS_JSON="$EVAL_TESTS" \
+    python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+
+def excerpt(text: str, limit: int = 1200) -> str:
+    normalized = (text or "").strip()
+    if not normalized:
+        return "(no output)"
+    if len(normalized) <= limit:
+        return normalized
+    return normalized[:limit] + "\n...[truncated]..."
+
+
+def suite_section(title: str, suite: dict[str, object]) -> list[str]:
+    command = " ".join(str(part) for part in suite.get("command", []))
+    return [
+        f"## {title}",
+        f"- Framework: {suite.get('framework') or 'unknown'}",
+        f"- Command: {command or '(none)'}",
+        (
+            "- Result: "
+            f"passed={suite.get('passed', 0)}, "
+            f"failed={suite.get('failed', 0)}, "
+            f"errors={suite.get('errors', 0)}, "
+            f"total={suite.get('total', 0)}, "
+            f"exit={suite.get('exit_code', 0)}"
+        ),
+        f"- Trusted evidence: {suite.get('execution_ok', False)}",
+        "",
+        "```text",
+        excerpt(str(suite.get("output", ""))),
+        "```",
+        "",
+    ]
+
+
+iteration = os.environ["ITERATION_LABEL"]
+feedback_path = Path(os.environ["FEEDBACK_PATH"])
+eval_json = json.loads(Path(os.environ["EVAL_JSON_PATH"]).read_text(encoding="utf-8"))
+visible = json.loads(os.environ["VISIBLE_TESTS_JSON"])
+hidden = json.loads(os.environ["EVAL_TESTS_JSON"])
+run_validity = os.environ["RUN_VALIDITY_VALUE"]
+
+joined_output = "\n".join(
+    str(section.get("output", ""))
+    for section in (visible, hidden)
+).lower()
+suggestions: list[str] = []
+
+if "cannot find module" in joined_output or "module not found" in joined_output:
+    suggestions.append(
+        "A dependency or import is missing. Update package manifests and imports so the app and tests can boot before adding more feature code."
+    )
+if any(
+    marker in joined_output
+    for marker in ("build failed", "syntax error", "redeclared", "undefined", "compile error")
+):
+    suggestions.append(
+        "The code is failing before tests can run. Pivot to restoring a clean build first, then continue feature work."
+    )
+if (
+    int(visible.get("total", 0)) == 0
+    and int(visible.get("errors", 0)) > 0
+    and int(hidden.get("total", 0)) == 0
+    and int(hidden.get("errors", 0)) > 0
+):
+    suggestions.append(
+        "Both visible and hidden suites are failing before any test body executes. Treat this as a setup/runtime blocker, not a polish issue."
+    )
+if not suggestions:
+    suggestions.append(
+        "Use the failing tests and bugs below as the acceptance criteria for the next attempt. You may refine the current implementation or pivot entirely."
+    )
+
+lines = [
+    f"# Iteration {iteration} feedback",
+    "",
+    "## Summary",
+    f"- Verdict: {eval_json.get('verdict', 'FAIL')}",
+    f"- Run validity: {run_validity}",
+    f"- Visible tests: {visible.get('passed', 0)}/{visible.get('total', 0)} passed (errors={visible.get('errors', 0)})",
+    f"- Hidden tests: {hidden.get('passed', 0)}/{hidden.get('total', 0)} passed (errors={hidden.get('errors', 0)})",
+    "",
+    "## Criterion scores",
+]
+
+for score in eval_json.get("scores", []):
+    lines.append(
+        f"- {score.get('criterion', 'unknown')}: {score.get('score', '?')}/10 — {score.get('justification', '')}"
+    )
+
+lines.extend(["", "## Bugs to fix"])
+bugs = eval_json.get("bugs", [])
+if bugs:
+    for bug in bugs:
+        lines.append(
+            f"- [{bug.get('severity', 'unknown')}] {bug.get('file', 'unknown')}:{bug.get('line', 0)} — {bug.get('description', '')}"
+        )
+else:
+    lines.append("- None listed by evaluator.")
+
+lines.extend(["", "## Required next-step guidance"])
+for suggestion in suggestions:
+    lines.append(f"- {suggestion}")
+lines.append(
+    "- Review the failing suites and fix the highest-leverage blocker first, even if that means changing package manifests, imports, or bootstrapping code."
+)
+lines.append(
+    "- This is an adversarial review loop: if the current implementation path is broken, pivot instead of polishing around the failure."
+)
+lines.append("")
+
+lines.extend(suite_section("Visible test evidence", visible))
+lines.extend(suite_section("Hidden evaluation evidence", hidden))
+
+feedback_path.write_text("\n".join(lines), encoding="utf-8")
+print(feedback_path.read_text(encoding="utf-8"), end="")
 PY
 }
 
@@ -283,8 +463,7 @@ fi
 
 # Install deps if needed
 if [[ -f "$WORKSPACE/package.json" ]] && [[ ! -d "$WORKSPACE/node_modules" ]]; then
-  log "Installing Node.js dependencies..."
-  (cd "$WORKSPACE" && npm install --quiet 2>/dev/null) || true
+  install_node_dependencies "Installing Node.js dependencies..."
 fi
 
 # Record start time
@@ -301,6 +480,7 @@ EVAL_SCORES='[]'
 BUGS='[]'
 VISIBLE_TESTS='null'
 EVAL_TESTS='null'
+SPRINTS_JSON='[]'
 
 # ---------------------------------------------------------------------------
 # SOLO mode
@@ -330,6 +510,8 @@ run_solo() {
   echo "$gen_output" > "$GENERATOR_DIR/transcript.txt"
   log "Generator complete (${GENERATOR_DURATION}s)"
   ITERATIONS=1
+
+  install_node_dependencies "Refreshing Node.js dependencies after generator..."
 
   # --- Evaluator ---
   run_evaluator ""
@@ -371,6 +553,8 @@ run_trio() {
     iteration=$((iteration + 1))
     ITERATIONS=$iteration
     log "--- Iteration $iteration/$MAX_ITERATIONS ---"
+    local iter_start iter_end iter_duration
+    iter_start=$(date +%s)
 
     # Build generator prompt
     local gen_prompt="Read TASK.md in the current directory. "
@@ -378,12 +562,15 @@ run_trio() {
     gen_prompt+="$(cat "$PLANNER_DIR/spec.md")\n\n"
 
     if [[ -n "$feedback" ]]; then
-      gen_prompt+="IMPORTANT — the evaluator rejected your previous attempt with this feedback:\n\n"
+      gen_prompt+="IMPORTANT — you are in an adversarial review loop. The evaluator rejected your previous attempt.\n"
+      gen_prompt+="You may refine the current implementation or pivot entirely if the current path is broken.\n"
+      gen_prompt+="Treat dependency, build, startup, and test-execution blockers as the highest priority; restore a runnable system before adding more feature work.\n\n"
+      gen_prompt+="Evaluator feedback and harness evidence:\n\n"
       gen_prompt+="$feedback\n\n"
-      gen_prompt+="Fix the issues described above. "
+      gen_prompt+="Fix the issues described above and use the failing suites as acceptance criteria for this iteration. "
     fi
 
-    gen_prompt+="Implement the fix or feature. Run the automated tests in tests/ to verify your changes pass. Make minimal, clean changes. Do not start long-running dev servers, watch processes, or manual demos. Do not create plans, todo lists, or extra documentation."
+    gen_prompt+="Implement the fix or feature. Run the automated tests in tests/ to verify your changes pass. Make minimal, clean changes. If tests reveal setup or dependency issues, fix those before polishing features. Do not start long-running dev servers, watch processes, or manual demos. Do not create plans, todo lists, or extra documentation."
 
     # --- Generator ---
     log "Running generator (iteration $iteration)..."
@@ -405,21 +592,21 @@ run_trio() {
     echo "$gen_output" > "$GENERATOR_DIR/transcript-iter${iteration}.txt"
     log "Generator complete (iteration $iteration)"
 
+    install_node_dependencies "Refreshing Node.js dependencies after generator iteration $iteration..."
+
     # --- Evaluator ---
     run_evaluator "$iteration"
+    iter_end=$(date +%s)
+    iter_duration=$((iter_end - iter_start))
+    append_sprint_metric "$iteration" "$iter_duration"
 
     # Check verdict
     if [[ "$VERDICT" == "PASS" ]]; then
       log "PASS on iteration $iteration"
       break
     else
-      # Extract feedback for next iteration
-      feedback=$(jq -r '.justification // "No justification provided"' "$EVALUATIONS_DIR/eval.json" 2>/dev/null || echo "Evaluation failed — retry.")
-      local bug_list
-      bug_list=$(jq -r '.bugs[]? | "- [\(.severity)] \(.file // "unknown"): \(.description)"' "$EVALUATIONS_DIR/eval.json" 2>/dev/null || echo "")
-      if [[ -n "$bug_list" ]]; then
-        feedback+=$'\n\nBugs found:\n'"$bug_list"
-      fi
+      feedback=$(write_iteration_feedback "$iteration")
+      log "Feedback saved to $GENERATOR_DIR/feedback_iter${iteration}.md"
       log "FAIL on iteration $iteration — retrying..."
     fi
   done
@@ -595,6 +782,7 @@ fi
 export RUN_ID BENCHMARK MODE MODEL EVAL_MODEL PLANNER_DURATION GENERATOR_DURATION
 export EVALUATOR_DURATION TOTAL_DURATION ITERATIONS VERDICT EVAL_SCORES BUGS
 export VISIBLE_TESTS EVAL_TESTS RUN_VALIDITY START_TIMESTAMP END_TIMESTAMP MANIFEST_PATH
+export SPRINTS_JSON
 
 write_canonical_manifest
 

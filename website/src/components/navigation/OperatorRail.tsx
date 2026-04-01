@@ -84,25 +84,17 @@ export function OperatorRail({
   appendixOpen,
 }: OperatorRailProps) {
   const { railOpen, toggleRail } = useRailState();
-  const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstNavButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousRailOpen = useRef(railOpen);
 
   // ---- Focus management ----
   useEffect(() => {
-    // Only act on transitions, not the initial render
     if (previousRailOpen.current === railOpen) return;
     previousRailOpen.current = railOpen;
 
     if (railOpen) {
-      // Rail just opened → focus first scene button
       requestAnimationFrame(() => {
         firstNavButtonRef.current?.focus();
-      });
-    } else {
-      // Rail just closed → focus toggle button (if it exists in the DOM)
-      requestAnimationFrame(() => {
-        toggleButtonRef.current?.focus();
       });
     }
   }, [railOpen]);
@@ -137,59 +129,42 @@ export function OperatorRail({
   }, [appendixOpen, railOpen, toggleRail]);
 
   return (
-    <>
-      {/* Toggle button — rendered outside the rail so it's always accessible.
-          The parent component should place this inside .topbar__status. */}
-      <button
-        ref={toggleButtonRef}
-        type="button"
-        className="chrome-button rail-toggle"
-        onClick={toggleRail}
-        aria-expanded={railOpen}
-        aria-controls="scene-rail"
-        title={railOpen ? 'Hide scene rail (S)' : 'Show scene rail (S)'}
-      >
-        {railOpen ? '◂ Scenes' : 'Scenes ▸'}
-      </button>
-
-      {/* The rail itself */}
-      <aside
-        id="scene-rail"
-        className="progress-rail"
-        role="navigation"
-        aria-label="Scene navigation"
-        data-rail-open={railOpen}
-      >
-        <div className="progress-rail__header">
-          <span className="chrome-pill">Operator rail</span>
-          <p>
-            Use ↑ ↓ or J / K to move. Press A for appendix. Press S to
-            toggle rail.
-          </p>
-        </div>
-        <nav className="scene-nav">
-          {scenes.map((scene, index) => (
-            <button
-              key={scene.id}
-              ref={index === 0 ? firstNavButtonRef : undefined}
-              className={
-                scene.id === activeScene
-                  ? 'scene-nav__item is-active'
-                  : 'scene-nav__item'
-              }
-              onClick={() => onJumpToScene(scene.id)}
-              type="button"
-            >
-              <span>{scene.short}</span>
-              <div>
-                <strong>{scene.eyebrow}</strong>
-                <small>{scene.title}</small>
-              </div>
-            </button>
-          ))}
-        </nav>
-      </aside>
-    </>
+    <aside
+      id="scene-rail"
+      className="progress-rail"
+      role="navigation"
+      aria-label="Scene navigation"
+      data-rail-open={railOpen}
+    >
+      <div className="progress-rail__header">
+        <span className="chrome-pill">Operator rail</span>
+        <p>
+          Use ↑ ↓ or J / K to move. Press A for appendix. Press S to
+          toggle rail.
+        </p>
+      </div>
+      <nav className="scene-nav">
+        {scenes.map((scene, index) => (
+          <button
+            key={scene.id}
+            ref={index === 0 ? firstNavButtonRef : undefined}
+            className={
+              scene.id === activeScene
+                ? 'scene-nav__item is-active'
+                : 'scene-nav__item'
+            }
+            onClick={() => onJumpToScene(scene.id)}
+            type="button"
+          >
+            <span>{scene.short}</span>
+            <div>
+              <strong>{scene.eyebrow}</strong>
+              <small>{scene.title}</small>
+            </div>
+          </button>
+        ))}
+      </nav>
+    </aside>
   );
 }
 

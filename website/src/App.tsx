@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { scenes, sceneAliases, type SceneId } from './content/scenes';
-import { OperatorRail, useRailState } from './components/navigation/OperatorRail';
+import { OperatorRail, RailToggleButton, useRailState } from './components/navigation/OperatorRail';
 import { DiagramRenderer } from './diagrams/renderers';
 import {
   diagram01TrioPipeline,
@@ -137,7 +137,7 @@ function clampSceneId(value: string | null): SceneId | null {
 
 function App(): JSX.Element {
   const reducedMotion = usePrefersReducedMotion();
-  const { railOpen } = useRailState();
+  const { railOpen, toggleRail } = useRailState();
   const initialScene = useMemo<SceneId>(() => {
     if (typeof window === 'undefined') {
       return 'hero';
@@ -326,6 +326,7 @@ function App(): JSX.Element {
             {scenes[sceneIndex]?.short} / {scenes.length}
           </span>
           <span className="topbar__scene">{scenes[sceneIndex]?.title}</span>
+          <RailToggleButton railOpen={railOpen} onToggle={toggleRail} />
           <button
             className="chrome-button"
             type="button"
@@ -1386,24 +1387,8 @@ function HeroSignal(): JSX.Element {
           <stop offset="100%" stopColor="#ffb648" />
         </linearGradient>
       </defs>
-      <circle cx="240" cy="210" r="152" className="hero-signal__ring" />
-      <circle cx="240" cy="210" r="102" className="hero-signal__ring hero-signal__ring--inner" />
-      <path d="M104 126 L240 82 L369 144" className="hero-signal__path" />
-      <path d="M112 270 L240 210 L356 312" className="hero-signal__path hero-signal__path--accent" />
-      <path d="M176 332 L240 210 L308 92" className="hero-signal__path" />
-      <g className="hero-signal__pulse">
-        <circle cx="104" cy="126" r="9" />
-        <circle cx="240" cy="82" r="11" />
-        <circle cx="369" cy="144" r="10" />
-        <circle cx="112" cy="270" r="10" />
-        <circle cx="240" cy="210" r="13" />
-        <circle cx="356" cy="312" r="9" />
-        <circle cx="176" cy="332" r="9" />
-        <circle cx="308" cy="92" r="9" />
-      </g>
-      <foreignObject x="178" y="184" width="124" height="60">
-        <div className="hero-signal__core">Planner / Generator / Evaluator</div>
-      </foreignObject>
+      {/* Subtle outer ring only — no confusing lines/dots */}
+      <circle cx="240" cy="210" r="160" className="hero-signal__ring" />
     </svg>
   );
 }

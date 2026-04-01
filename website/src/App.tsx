@@ -2,19 +2,34 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { scenes, sceneAliases, type SceneId } from './content/scenes';
 import { OperatorRail, useRailState } from './components/navigation/OperatorRail';
+import { DiagramRenderer } from './diagrams/renderers';
+import {
+  diagram01TrioPipeline,
+  diagram02GoodhartBoundary,
+  diagram03SprintContract,
+  diagram04FilesHandoff,
+  diagram05TelemetryStack,
+  diagram06HeadlineResult,
+  diagram09IndustryTimeline,
+  diagram10EcosystemNetwork,
+  diagram11ShowcaseRebuild,
+  diagram12DemoFlow,
+  diagram13DecisionTree,
+  diagram14ModelTiering,
+  diagram15RoundRobin,
+} from './diagrams/specs';
 import {
   heroMetrics,
   anthropicSparkComparison,
+  articleVsHarnessa,
   anthropicQuote,
   wallContext,
   wallEvaluation,
   adversarialInsightPoints,
+  ganAnalogy,
   adversarialQuote,
-  architectureStages,
   goodhartBoundary,
   sprintContracts,
-  filesOnDisk,
-  telemetrySignals,
   telemetryDetail,
   karpathyQuote,
   criticRules,
@@ -29,15 +44,9 @@ import {
   claimsPartial,
   claimsInconclusive,
   evaluatorLeniencyObservations,
-  landscapeEvents,
-  ecosystemNodes,
-  showcaseComparison,
+  measurementCaveats,
   showcaseKeyLessons,
   demoFlow,
-  useTrio,
-  skipTrio,
-  tieringRoles,
-  roundRobinConcepts,
   roundRobinCaveat,
   closingQuote,
   appendixRuns,
@@ -418,6 +427,20 @@ function App(): JSX.Element {
             "{anthropicQuote.text}"
             <cite>{anthropicQuote.author}</cite>
           </blockquote>
+          <div className="scorecard-list" style={{ marginTop: 'var(--space-4)' }}>
+            {articleVsHarnessa.map((row, index) => (
+              <article key={row.dimension} className="score-row reveal" style={{ transitionDelay: `${(index + 3) * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{row.verdict === 'confirmed' ? '✅' : row.verdict === 'partial' ? '⚠️' : '❓'} {row.verdict}</span>
+                    <h3>{row.dimension}</h3>
+                  </div>
+                </div>
+                <p><strong>Article:</strong> {row.article}</p>
+                <p><strong>Harnessa:</strong> {row.harnessa}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section
@@ -503,6 +526,16 @@ function App(): JSX.Element {
               </div>
             </div>
           </div>
+          <div className="two-up-grid">
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">{ganAnalogy.title}</span>
+              <p className="panel__body">{ganAnalogy.body}</p>
+            </article>
+            <article className="panel reveal delay-3">
+              <span className="panel__tag">What Harnessa is</span>
+              <p className="panel__body">{ganAnalogy.clarification}</p>
+            </article>
+          </div>
         </section>
 
         {/* ── Act 2 — Architecture & Control Surfaces ─────────────────── */}
@@ -519,26 +552,7 @@ function App(): JSX.Element {
             lede="The architecture matters more than one bigger context window. Separate roles, explicit contracts, and independent evaluation create the quality leverage."
           />
           <div className="architecture-grid reveal delay-1">
-            <div className="topology-shell">
-              <div className="topology-flow">
-                {architectureStages.map((stage) => (
-                  <div key={stage.name} className="topology-node" style={{ ['--node-accent' as string]: stage.accent }}>
-                    <span className="topology-node__name">{stage.name}</span>
-                    <strong>{stage.title}</strong>
-                    <ul>
-                      {stage.bullets.map((bullet) => (
-                        <li key={bullet}>{bullet}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-              <div className="topology-links" aria-hidden="true">
-                <span className="topology-link">Spec</span>
-                <span className="topology-link topology-link--loop">Adversarial feedback loop</span>
-                <span className="topology-link">Grade + bug report</span>
-              </div>
-            </div>
+            <DiagramRenderer spec={diagram01TrioPipeline} />
           </div>
         </section>
 
@@ -553,23 +567,8 @@ function App(): JSX.Element {
             title="The Goodhart boundary"
             lede={`"${goodhartBoundary.principle}" — If the generator can see the acceptance tests, it optimizes for them instead of building real quality.`}
           />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">Generator sees</span>
-              <ul className="decision-list">
-                {goodhartBoundary.generatorTree.map((item) => (
-                  <li key={item}><code>{item}</code></li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Evaluator sees</span>
-              <ul className="decision-list">
-                {goodhartBoundary.evaluatorTree.map((item) => (
-                  <li key={item}><code>{item}</code></li>
-                ))}
-              </ul>
-            </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram02GoodhartBoundary} />
           </div>
           <div className="aggregate-strip reveal delay-3">
             <div>
@@ -590,17 +589,8 @@ function App(): JSX.Element {
             title="Spec-driven sprint agreements"
             lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
           />
-          <div className="scorecard-list">
-            {sprintContracts.flow.map((item, index) => (
-              <article key={item.step} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{item.step}</span>
-                    <h3>{item.action}</h3>
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram03SprintContract} />
           </div>
           <div className="aggregate-strip reveal delay-3">
             <p>{sprintContracts.keyInsight}</p>
@@ -618,23 +608,8 @@ function App(): JSX.Element {
             title="Files on disk, not chat history"
             lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
           />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">Handoff artifacts</span>
-              <ul className="decision-list">
-                {filesOnDisk.artifacts.map((a) => (
-                  <li key={a.name}><code>{a.name}</code> — {a.role}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Why files?</span>
-              <ul className="decision-list">
-                {filesOnDisk.benefits.map((b) => (
-                  <li key={b}>{b}</li>
-                ))}
-              </ul>
-            </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram04FilesHandoff} />
           </div>
         </section>
 
@@ -649,20 +624,9 @@ function App(): JSX.Element {
             title="Every run produces structured evidence"
             lede={telemetryDetail.description}
           />
-          <aside className="panel telemetry-panel reveal delay-1">
-            <span className="panel__tag">Telemetry rail</span>
-            <h3>{telemetryDetail.keyInsight}</h3>
-            <div className="telemetry-grid">
-              {telemetrySignals.map((signal) => (
-                <div key={signal} className="telemetry-chip">
-                  {signal}
-                </div>
-              ))}
-            </div>
-            <p className="telemetry-note">
-              Generator cannot see hidden `_eval/` tests. Evaluator can. That boundary is the Goodhart defense.
-            </p>
-          </aside>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram05TelemetryStack} />
+          </div>
         </section>
 
         {/* ── Act 3 — Critic Calibration & Experimental Setup ──────────── */}
@@ -752,6 +716,7 @@ function App(): JSX.Element {
                   <div className="score-row__winner">≥ {row.threshold}</div>
                 </div>
                 <p>{row.meaning}</p>
+                <p style={{ opacity: 0.7, fontSize: '0.85em' }}>{row.calibrationLow} · {row.calibrationHigh}</p>
               </article>
             ))}
           </div>
@@ -788,6 +753,9 @@ function App(): JSX.Element {
           </div>
           <div className="aggregate-strip reveal delay-3">
             <p><strong>Independent variable:</strong> {experimentDesign.independentVariable}</p>
+          </div>
+          <div className="aggregate-strip reveal delay-4">
+            <p><strong>{experimentDesign.coverage.benchmarks} benchmarks</strong> across <strong>{experimentDesign.coverage.languages} languages</strong> ({experimentDesign.coverage.languageList.join(', ')}) · <strong>{experimentDesign.coverage.totalRuns} total runs</strong> · {experimentDesign.coverage.runsNote}</p>
           </div>
         </section>
 
@@ -831,22 +799,8 @@ function App(): JSX.Element {
             title="Same task. Same model. Same tools. Different architecture."
             lede="The full-stack benchmark is the story to remember: WebSocket notifications were broken in solo mode and working in trio mode."
           />
-          <div className="headline-grid">
-            <article className="state-card state-card--solo reveal delay-1">
-              <span className="panel__tag">Solo</span>
-              <strong>FAIL</strong>
-              <p>Core feature broken. Notification system did not work.</p>
-            </article>
-            <div className="state-transition reveal delay-2">
-              <span className="chrome-pill chrome-pill--active">Planner + generator + evaluator</span>
-              <div className="transition-arrow">FAIL → PASS</div>
-              <small>That is the categorical difference the article predicted.</small>
-            </div>
-            <article className="state-card state-card--trio reveal delay-3">
-              <span className="panel__tag">Trio</span>
-              <strong>PASS</strong>
-              <p>Correct notifications landed on the first trio attempt.</p>
-            </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram06HeadlineResult} />
           </div>
           <div className="metric-comparison reveal delay-4">
             {evidenceMetrics.map((metric) => (
@@ -1058,20 +1012,8 @@ function App(): JSX.Element {
             title="This is not one lab's quirky workflow"
             lede="Anthropic, Claude Code, OpenAI Symphony, and community toolchains keep rediscovering the same foundations: isolated workspaces, specialized roles, and evaluation as architecture."
           />
-          <div className="panel timeline-panel reveal delay-1">
-            <span className="panel__tag">Convergence map</span>
-            <div className="timeline">
-              {landscapeEvents.map((event, index) => (
-                <article key={`${event.stamp}-${event.actor}`} className="timeline__item" style={{ transitionDelay: `${index * 90}ms` } as CSSProperties}>
-                  <span className="timeline__stamp">{event.stamp}</span>
-                  <div className="timeline__body">
-                    <strong>{event.actor}</strong>
-                    <h3>{event.title}</h3>
-                    <p>{event.detail}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram09IndustryTimeline} />
           </div>
         </section>
 
@@ -1086,17 +1028,8 @@ function App(): JSX.Element {
             title="Outside voices confirm the direction"
             lede="Independent teams and projects keep arriving at the same architectural patterns — isolated agents, structured evaluation, and adversarial feedback loops."
           />
-          <div className="scorecard-list">
-            {ecosystemNodes.map((node, index) => (
-              <article key={node.name} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{node.name}</span>
-                    <h3>{node.insight}</h3>
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram10EcosystemNetwork} />
           </div>
         </section>
 
@@ -1111,24 +1044,8 @@ function App(): JSX.Element {
             title="Monolith to proper app in two iterations"
             lede="The showcase rebuild is the trio pattern in action: iteration 1 shipped a 1-file monolith. The evaluator rejected it. Iteration 2 produced a 32-file full-stack application."
           />
-          <div className="headline-grid">
-            <article className="state-card state-card--solo reveal delay-1">
-              <span className="panel__tag">Iteration 1</span>
-              <strong>{showcaseComparison.iteration1.verdict}</strong>
-              <p>{showcaseComparison.iteration1.files} file · {showcaseComparison.iteration1.lines} lines · {showcaseComparison.iteration1.tests} tests</p>
-              <small>{showcaseComparison.iteration1.note}</small>
-            </article>
-            <div className="state-transition reveal delay-2">
-              <span className="chrome-pill chrome-pill--active">Evaluator feedback</span>
-              <div className="transition-arrow">FAIL → PASS</div>
-              <small>{showcaseComparison.iteration2.lines} lines changed</small>
-            </div>
-            <article className="state-card state-card--trio reveal delay-3">
-              <span className="panel__tag">Iteration 2</span>
-              <strong>{showcaseComparison.iteration2.verdict}</strong>
-              <p>{showcaseComparison.iteration2.files} files · {showcaseComparison.iteration2.components} components · {showcaseComparison.iteration2.tests} tests</p>
-              <small>{showcaseComparison.iteration2.note}</small>
-            </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram11ShowcaseRebuild} />
           </div>
           <div className="panel reveal delay-4">
             <span className="panel__tag">Key lessons</span>
@@ -1153,23 +1070,8 @@ function App(): JSX.Element {
             title="One command, three agents"
             lede="The /harnessa skill runs the full trio pipeline inside any Copilot CLI session. No API keys, no setup — just the command."
           />
-          <div className="panel reveal delay-1">
-            <span className="panel__tag">Command</span>
-            <div className="verdict-code">
-              <pre>{demoFlow.command}</pre>
-            </div>
-          </div>
-          <div className="scorecard-list">
-            {demoFlow.phases.map((phase, index) => (
-              <article key={phase.name} className="score-row reveal" style={{ transitionDelay: `${(index + 1) * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{phase.name}</span>
-                    <h3>{phase.description}</h3>
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram12DemoFlow} />
           </div>
           <div className="aggregate-strip reveal delay-4">
             <p>{demoFlow.note}</p>
@@ -1187,23 +1089,8 @@ function App(): JSX.Element {
             title="When trio is worth the overhead"
             lede="The trio is not a religion. It is an operating pattern for tasks where solo output is likely to be wrong, incomplete, or self-flatteringly over-scored."
           />
-          <div className="decision-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">Use trio</span>
-              <ul className="decision-list">
-                {useTrio.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Skip it</span>
-              <ul className="decision-list decision-list--muted">
-                {skipTrio.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram13DecisionTree} />
           </div>
         </section>
 
@@ -1218,21 +1105,9 @@ function App(): JSX.Element {
             title="Opus plans, Sonnet builds"
             lede="Not every agent needs the most expensive model. Match model capability to role: reasoning-heavy roles get the premium model, execution roles get the fast one."
           />
-          <article className="panel reveal delay-1">
-            <span className="panel__tag">Models can punch above their weight</span>
-            <div className="tiering-stack">
-              {tieringRoles.map((role) => (
-                <div key={role.model} className="tiering-card">
-                  <strong>{role.model}</strong>
-                  <span>{role.role}</span>
-                  <p>{role.note}</p>
-                </div>
-              ))}
-            </div>
-            <p className="decision-footnote">
-              Industry practice, not directly tested here: Anthropic's `/opusplan` pattern keeps the premium reasoning model in planning mode and lets faster models do the execution work.
-            </p>
-          </article>
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram14ModelTiering} />
+          </div>
         </section>
 
         <section
@@ -1246,17 +1121,8 @@ function App(): JSX.Element {
             title="Cross-model evaluation and role rotation"
             lede="What happens when different models evaluate each other's work? The theory: disagreements between models surface blind spots that same-model evaluation misses."
           />
-          <div className="scorecard-list">
-            {roundRobinConcepts.map((item, index) => (
-              <article key={item.concept} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{item.concept}</span>
-                    <h3>{item.description}</h3>
-                  </div>
-                </div>
-              </article>
-            ))}
+          <div className="reveal delay-1">
+            <DiagramRenderer spec={diagram15RoundRobin} />
           </div>
           <div className="aggregate-strip reveal delay-3">
             <div>

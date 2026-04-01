@@ -1,0 +1,997 @@
+/* ────────────────────────────────────────────────────────────────────
+   Diagram Renderers — CSS
+   Uses theme vars from index.css: --signal-blue, --signal-green,
+   --signal-amber, --signal-red, --border, --panel, --text, --muted
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Shared primitives ──────────────────────────────────────────── */
+
+[data-diagram-id] {
+  width: 100%;
+}
+
+.dg-annotation {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.dg-annotation--top {
+  margin-bottom: 0.75rem;
+}
+
+.dg-annotation--bottom {
+  margin-top: 0.75rem;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.dg-annotation--inline {
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.dg-node__type {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.dg-node__label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+}
+
+.dg-node__detail {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.dg-unsupported {
+  padding: 1rem;
+  color: var(--signal-amber);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+}
+
+/* ── Flow Diagram ───────────────────────────────────────────────── */
+
+.dg-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dg-flow__track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dg-flow--vertical .dg-flow__track {
+  flex-direction: column;
+}
+
+.dg-flow__step {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dg-flow--vertical .dg-flow__step {
+  flex-direction: column;
+}
+
+.dg-flow__node {
+  background: var(--panel);
+  border: 1px solid var(--node-accent, var(--border));
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  min-width: 120px;
+  text-align: center;
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.dg-flow__node:hover {
+  border-color: var(--node-accent, var(--signal-blue));
+}
+
+.dg-flow__edge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.4rem;
+  position: relative;
+  min-width: 60px;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.dg-flow--vertical .dg-flow__edge {
+  flex-direction: row;
+  padding: 0.4rem 0;
+  min-width: unset;
+  min-height: 40px;
+}
+
+.dg-flow__arrow {
+  width: 40px;
+  height: 2px;
+  background: var(--border);
+  position: relative;
+}
+
+.dg-flow__arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 6px solid var(--border);
+}
+
+.dg-flow--vertical .dg-flow__arrow {
+  width: 2px;
+  height: 30px;
+}
+
+.dg-flow--vertical .dg-flow__arrow::after {
+  right: auto;
+  top: auto;
+  bottom: -1px;
+  left: -4px;
+  border: 5px solid transparent;
+  border-top: 6px solid var(--border);
+  border-left: 5px solid transparent;
+}
+
+.dg-flow__edge--dashed .dg-flow__arrow {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--border) 0,
+    var(--border) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.dg-flow__edge--double .dg-flow__arrow {
+  height: 4px;
+  border-top: 2px solid var(--signal-amber);
+  border-bottom: 2px solid var(--signal-amber);
+  background: transparent;
+}
+
+.dg-flow__edge-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dg-flow__back-edge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.dg-flow__back-edge::before {
+  content: '';
+  width: 60%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--signal-red) 0,
+    var(--signal-red) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.dg-flow__back-arrow {
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-right: 6px solid var(--signal-red);
+}
+
+/* ── Comparison Diagram ─────────────────────────────────────────── */
+
+.dg-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dg-comparison__panels {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.dg-comparison__panels--three {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.dg-comparison__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.dg-comparison__side--left {
+  border-color: var(--signal-red);
+}
+
+.dg-comparison__side--right {
+  border-color: var(--signal-green);
+}
+
+.dg-comparison__region-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dg-comparison__node {
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--node-accent, var(--border));
+  border-radius: 0 6px 6px 0;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dg-comparison__node--dimmed {
+  opacity: 0.4;
+  border-left-style: dashed;
+}
+
+.dg-comparison__divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  position: relative;
+}
+
+.dg-comparison__divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    var(--border) 0,
+    var(--border) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.dg-comparison__boundary-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--signal-amber);
+  background: var(--bg);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.dg-comparison__bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.dg-comparison__bridge .dg-node__label {
+  font-size: 0.75rem;
+  color: var(--signal-amber);
+}
+
+.dg-comparison__edge-arrow {
+  width: 2px;
+  height: 12px;
+  background: var(--border);
+  position: relative;
+}
+
+.dg-comparison__edge-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -4px;
+  border: 5px solid transparent;
+  border-top: 6px solid var(--border);
+}
+
+/* ── Timeline Diagram ───────────────────────────────────────────── */
+
+.dg-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dg-timeline__track {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.dg-timeline__track::before {
+  content: '';
+  position: absolute;
+  left: 0.65rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: linear-gradient(180deg, var(--signal-blue), var(--signal-green));
+}
+
+.dg-timeline__item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  position: relative;
+}
+
+.dg-timeline__marker {
+  position: absolute;
+  left: -1.15rem;
+  top: 1rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--signal-blue);
+  border: 2px solid var(--bg);
+  z-index: 1;
+}
+
+.dg-timeline__stamp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  min-width: 5rem;
+  flex-shrink: 0;
+}
+
+.dg-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dg-timeline__connector {
+  display: none;
+}
+
+/* ── Tree Diagram ───────────────────────────────────────────────── */
+
+.dg-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.dg-tree__root {
+  background: var(--panel);
+  border: 1px solid var(--signal-blue);
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  max-width: 400px;
+}
+
+.dg-tree__branches {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.dg-tree__branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  max-width: 220px;
+}
+
+.dg-tree__edge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.dg-tree__edge::before {
+  content: '';
+  width: 2px;
+  height: 24px;
+  background: var(--border);
+}
+
+.dg-tree__edge::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top: 6px solid var(--border);
+}
+
+.dg-tree__edge-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  position: absolute;
+  right: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.dg-tree__node {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.dg-tree__node--leaf {
+  border-color: var(--node-accent, var(--border));
+}
+
+.dg-tree__node--intermediate {
+  padding: 0.5rem 0.75rem;
+}
+
+/* ── Grid Diagram ───────────────────────────────────────────────── */
+
+.dg-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dg-grid__header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dg-grid__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dg-grid__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  align-items: center;
+  transition: border-color 0.2s ease;
+}
+
+.dg-grid__row--featured {
+  border-color: var(--signal-green);
+  background: linear-gradient(135deg, var(--panel), rgba(81, 245, 200, 0.06));
+}
+
+.dg-grid__cell--label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dg-grid__cell--winner {
+  text-align: right;
+}
+
+.dg-grid__badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--signal-green);
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.dg-grid__cell--notes .dg-node__detail {
+  font-style: italic;
+}
+
+/* ── Stack Diagram ──────────────────────────────────────────────── */
+
+.dg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dg-stack__header {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--panel-strong);
+  border: 1px solid var(--signal-blue);
+  border-radius: 10px 10px 0 0;
+}
+
+.dg-stack__header .dg-node__label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.dg-stack__container {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0 0 10px 10px;
+  padding: 0.75rem;
+}
+
+.dg-stack__region-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.dg-stack__layers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.35rem;
+}
+
+.dg-stack__layer {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease;
+}
+
+.dg-stack__layer:hover {
+  border-color: var(--signal-blue);
+}
+
+/* ── Cycle Diagram ──────────────────────────────────────────────── */
+
+.dg-cycle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dg-cycle__ring {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dg-cycle--vertical .dg-cycle__ring {
+  flex-direction: column;
+}
+
+.dg-cycle--circular .dg-cycle__ring {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dg-cycle__step {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dg-cycle--vertical .dg-cycle__step {
+  flex-direction: column;
+}
+
+.dg-cycle__node {
+  background: var(--panel);
+  border: 1px solid var(--node-accent, var(--border));
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  min-width: 100px;
+  transition: border-color 0.3s ease;
+}
+
+.dg-cycle__node:hover {
+  border-color: var(--node-accent, var(--signal-blue));
+  box-shadow: 0 0 12px rgba(77, 214, 255, 0.1);
+}
+
+.dg-cycle__edge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.3rem;
+  flex-direction: column;
+}
+
+.dg-cycle--vertical .dg-cycle__edge {
+  flex-direction: row;
+  padding: 0.3rem 0;
+}
+
+.dg-cycle__arrow {
+  width: 30px;
+  height: 2px;
+  background: var(--border);
+  position: relative;
+}
+
+.dg-cycle__arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 6px solid var(--border);
+}
+
+.dg-cycle--vertical .dg-cycle__arrow {
+  width: 2px;
+  height: 24px;
+}
+
+.dg-cycle--vertical .dg-cycle__arrow::after {
+  right: auto;
+  top: auto;
+  bottom: -1px;
+  left: -4px;
+  border: 5px solid transparent;
+  border-top: 6px solid var(--border);
+  border-left: 5px solid transparent;
+}
+
+.dg-cycle__edge--dashed .dg-cycle__arrow {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--border) 0,
+    var(--border) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.dg-cycle__edge--double .dg-cycle__arrow {
+  height: 4px;
+  border-top: 2px solid var(--signal-amber);
+  border-bottom: 2px solid var(--signal-amber);
+  background: transparent;
+}
+
+.dg-cycle__edge-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Hub-and-spoke layout */
+
+.dg-cycle--hub .dg-cycle__hub-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dg-cycle__center {
+  background: var(--panel-strong);
+  border: 2px solid var(--node-accent, var(--signal-amber));
+  border-radius: 50%;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+}
+
+.dg-cycle__center .dg-node__label {
+  font-size: 0.75rem;
+}
+
+.dg-cycle__spokes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.dg-cycle__spoke {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dg-cycle__spoke-line {
+  width: 2px;
+  height: 16px;
+  background: var(--border);
+}
+
+/* ── State Diagram ──────────────────────────────────────────────── */
+
+.dg-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.dg-state__card {
+  background: var(--panel);
+  border: 2px solid var(--node-accent, var(--border));
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  min-width: 140px;
+  max-width: 220px;
+  flex: 1;
+}
+
+.dg-state__card .dg-node__label {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0.25rem 0;
+}
+
+.dg-state__card--before .dg-node__label {
+  color: var(--node-accent, var(--signal-red));
+}
+
+.dg-state__card--after .dg-node__label {
+  color: var(--node-accent, var(--signal-green));
+}
+
+.dg-state--dramatic .dg-state__card--before {
+  box-shadow: 0 0 20px rgba(255, 108, 140, 0.15);
+}
+
+.dg-state--dramatic .dg-state__card--after {
+  box-shadow: 0 0 20px rgba(81, 245, 200, 0.15);
+}
+
+.dg-state__transition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 1rem;
+  min-width: 80px;
+}
+
+.dg-state__arrow {
+  width: 60px;
+  height: 3px;
+  background: var(--border);
+  position: relative;
+}
+
+.dg-state__arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -5px;
+  border: 6px solid transparent;
+  border-left: 8px solid var(--border);
+}
+
+.dg-state__transition--double .dg-state__arrow {
+  height: 5px;
+  border-top: 2px solid var(--signal-amber);
+  border-bottom: 2px solid var(--signal-amber);
+  background: transparent;
+}
+
+.dg-state__transition--double .dg-state__arrow::after {
+  border-left-color: var(--signal-amber);
+}
+
+.dg-state__label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 120px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dg-flow--horizontal .dg-flow__track {
+    flex-direction: column;
+  }
+
+  .dg-flow--horizontal .dg-flow__step {
+    flex-direction: column;
+  }
+
+  .dg-flow--horizontal .dg-flow__arrow {
+    width: 2px;
+    height: 24px;
+  }
+
+  .dg-flow--horizontal .dg-flow__arrow::after {
+    right: auto;
+    top: auto;
+    bottom: -1px;
+    left: -4px;
+    border: 5px solid transparent;
+    border-top: 6px solid var(--border);
+    border-left: 5px solid transparent;
+  }
+
+  .dg-comparison__panels {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .dg-comparison__divider {
+    padding: 0.5rem 0;
+  }
+
+  .dg-comparison__divider::before {
+    width: 60%;
+    height: 2px;
+    top: 50%;
+    left: 20%;
+    bottom: auto;
+  }
+
+  .dg-tree__branches {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .dg-tree__branch {
+    max-width: none;
+    width: 100%;
+  }
+
+  .dg-grid__row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .dg-grid__cell--winner {
+    text-align: left;
+  }
+
+  .dg-state {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .dg-state__transition {
+    padding: 0.5rem 0;
+  }
+
+  .dg-state__arrow {
+    width: 2px;
+    height: 30px;
+  }
+
+  .dg-state__arrow::after {
+    right: auto;
+    top: auto;
+    bottom: -1px;
+    left: -5px;
+    border: 6px solid transparent;
+    border-top: 8px solid var(--border);
+  }
+
+  .dg-state__card {
+    max-width: none;
+    width: 100%;
+  }
+
+  .dg-cycle__ring {
+    flex-direction: column;
+  }
+
+  .dg-cycle__step {
+    flex-direction: column;
+  }
+
+  .dg-cycle__arrow {
+    width: 2px;
+    height: 24px;
+  }
+
+  .dg-cycle__arrow::after {
+    right: auto;
+    top: auto;
+    bottom: -1px;
+    left: -4px;
+    border: 5px solid transparent;
+    border-top: 6px solid var(--border);
+    border-left: 5px solid transparent;
+  }
+
+  .dg-cycle__center {
+    width: 110px;
+    height: 110px;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .dg-flow__node,
+  .dg-cycle__node,
+  .dg-state__card,
+  .dg-stack__layer,
+  .dg-grid__row {
+    transition: none;
+  }
+}

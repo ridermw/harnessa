@@ -109,6 +109,20 @@ cd showcase && npm install && npm run dev
 
 See [showcase/BUILD_LOG.md](showcase/BUILD_LOG.md) for the full build narrative (Planner→Generator→Evaluator phases).
 
+## Presentation Site
+
+The repo now includes a polished web presentation for **The Adversarial Architecture** in `website/` — built as a GitHub Pages-friendly keynote experience rather than a slide export.
+
+```bash
+cd website && npm install && npm run dev
+```
+
+Static production build:
+
+```bash
+cd website && npm run build
+```
+
 ## Documentation
 
 | Document | Purpose |
@@ -116,6 +130,7 @@ See [showcase/BUILD_LOG.md](showcase/BUILD_LOG.md) for the full build narrative 
 | [PROJECT_SPEC.md](PROJECT_SPEC.md) | Complete project specification — the "bible" for this repo |
 | [RESULTS.md](RESULTS.md) | Experimental results — solo vs trio across 5 benchmarks |
 | [INSTALL.md](INSTALL.md) | Installation guide with verification, troubleshooting, uninstall |
+| [website/PLAN.md](website/PLAN.md) | Presentation site plan and scene architecture |
 | [showcase/BUILD_LOG.md](showcase/BUILD_LOG.md) | How the trio built the showcase app end-to-end |
 | [docs/ARTICLE_REFERENCE.md](docs/ARTICLE_REFERENCE.md) | Full text of the Anthropic article that inspired this project |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical architecture deep-dive |

@@ -20,6 +20,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `website/` web-keynote presentation site for **The Adversarial Architecture** with full-screen scenes, hash/deep-link navigation, appendix overlay, and GitHub Pages-friendly static build output
+- GitHub Pages workflow (`.github/workflows/presentation-pages.yml`) to build and deploy the presentation microsite from the repo
+- Presentation source artifacts in `presentation/` plus the supporting narrative plan in `docs/PRESENTATION_PLAN.md`
+
 ## [0.1.0] — 2026-03-26
 
 ### Added

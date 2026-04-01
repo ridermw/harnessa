@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Adversarial Architecture — preview</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0f1724;
+        color: #f8f8f8;
+        font-family: Calibri, "Segoe UI", Arial, sans-serif;
+      }
+      .shell {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 100vh;
+      }
+      header {
+        padding: 20px 24px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(19, 32, 58, 0.95);
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      p {
+        margin: 8px 0 14px;
+        color: #c6fff9;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      nav a, nav span {
+        color: #0f1724;
+        background: #f2cc8f;
+        text-decoration: none;
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 700;
+      }
+      nav a.secondary {
+        background: #2ec4b6;
+      }
+      .frame {
+        padding: 18px;
+      }
+      iframe {
+        width: 100%;
+        min-height: calc(100vh - 150px);
+        border: 0;
+        border-radius: 18px;
+        background: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <h1>The Adversarial Architecture — browser preview</h1>
+        <p>Open this page in a browser-style tool to inspect rendered slides. The frame below prefers the Quick Look HTML export and falls back to a generated HTML summary.</p>
+        <nav>
+          <a href="../the-adversarial-architecture.pptx">Deck (.pptx)</a>
+          <a class="secondary" href="../the-adversarial-architecture.pdf">PDF export</a>
+          <a class="secondary" href="../PRESENTATION_PLAN.md">Plan copy</a>
+          <a href="the-adversarial-architecture.pptx.qlpreview/Preview.html">Quick Look HTML preview</a>
+          <a class="secondary" href="fallback-preview.html">Fallback HTML preview</a>
+        </nav>
+      </header>
+      <div class="frame">
+        <iframe src="the-adversarial-architecture.pptx.qlpreview/Preview.html" title="The Adversarial Architecture preview"></iframe>
+      </div>
+    </div>
+  </body>
+</html>

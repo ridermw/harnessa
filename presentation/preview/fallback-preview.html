@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Adversarial Architecture — fallback preview</title>
+    <style>
+      :root {
+        --navy: #1b2a4a;
+        --panel: #ffffff;
+        --ink: #1b2a4a;
+        --teal: #2ec4b6;
+        --shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #eef2f7 0%, #dbe4ef 100%);
+        color: var(--ink);
+        font-family: Calibri, "Segoe UI", Arial, sans-serif;
+      }
+      main {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero {
+        margin-bottom: 24px;
+        padding: 20px 24px;
+        border-radius: 20px;
+        background: var(--navy);
+        color: white;
+        box-shadow: var(--shadow);
+      }
+      .hero p { margin: 8px 0 0; color: #d8fffb; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+        gap: 24px;
+      }
+      .slide {
+        position: relative;
+        min-height: 360px;
+        padding: 32px 36px;
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+      .slide.light {
+        background: var(--panel);
+        color: var(--ink);
+      }
+      .slide.dark {
+        background: var(--navy);
+        color: white;
+      }
+      .slide.dark h2 {
+        color: white;
+      }
+      .slide.dark li {
+        color: #ebffff;
+      }
+      .slide-number {
+        position: absolute;
+        top: 18px;
+        right: 22px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--teal);
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 30px;
+        line-height: 1.15;
+      }
+      ul {
+        margin: 0;
+        padding-left: 22px;
+        line-height: 1.45;
+        font-size: 19px;
+      }
+      li + li { margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>The Adversarial Architecture — fallback browser preview</h1>
+        <p>Generated from the PPTX when Quick Look HTML export is unavailable. It preserves slide order, titles, and key text for browser inspection.</p>
+      </section>
+      <section class="grid">
+        
+            <section class="slide dark">
+              <div class="slide-number">01</div>
+              <h2>The Adversarial Architecture</h2>
+              <ul><li>Why the best AI output comes from agents that disagree</li><li>Matthew Williams — Senior SWE (MSFT) · 2026-04-01 · Based on Anthropic Labs research by Prithvi Rajasekaran</li><li>01</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">02</div>
+              <h2>AI Agents Hit Two Walls</h2>
+              <ul><li>02</li><li>Wall 1 · Context degradation</li><li>As the context window fills, coherence drops. Some models start wrapping up work early — even when the job is unfinished.</li><li>Attempt N</li><li>Attempt 5</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">03</div>
+              <h2>What if the Builder and the Critic Were Different Agents?</h2>
+              <ul><li>03</li><li>PlannerExpands promptinto spec</li><li>GeneratorBuilds featuresin sprints</li><li>EvaluatorTests andgrades</li><li>feedback loop</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">04</div>
+              <h2>The Article That Started This</h2>
+              <ul><li>04</li><li>Approach</li><li>Duration</li><li>Cost</li><li>Result</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">05</div>
+              <h2>The Architecture — Three Agents, One Pipeline</h2>
+              <ul><li>05</li><li>ORCHESTRATOR</li><li>Planner1–4 sentence prompt → ambitious specWHAT, not HOW</li><li>GeneratorImplements in sprintsNegotiates contracts</li><li>EvaluatorTests live appGrades against criteria</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">06</div>
+              <h2>How We Prevent Gaming</h2>
+              <ul><li>06</li><li>Generator worktree benchmarks/├── TASK.md├── tests/├── src/└── _eval/   hidden from generator</li><li>Goodhart guardrail</li><li>Evaluator worktree benchmarks/├── TASK.md├── tests/├── src/└── _eval/   visible</li><li>LOCK</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">07</div>
+              <h2>Building a Critic That Actually Criticizes</h2>
+              <ul><li>07</li><li>“Used an LLM to improve my argument over 4 hours… ask it to argue the opposite. LLM demolishes the entire argument. lol.” — Andrej Karpathy</li><li>{  &quot;functionality&quot;: 1,  &quot;verdict&quot;: &quot;FAIL&quot; } ↓ feedback loop {  &quot;functionality&quot;: 10,  &quot;verdict&quot;: &quot;PASS&quot; }</li><li>Anti-people-pleasing rules • Any test fails → functionality ≤ 4 • No new tests → test coverage ≤ 4 • Stub implementation → product depth ≤ 3 • All scores ≥ 7? Flag as suspicious</li><li>Calibration still imperfect: TS benchmark scored func=8 with 50% tests failing.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">08</div>
+              <h2>Agreeing on “Done” Before Writing Code</h2>
+              <ul><li>08</li><li>Generator proposal • Implement the next feature slice • Define concrete acceptance checks • Commit to what will be demo-ready this sprint</li><li>Evaluator review • Tighten or remove vague criteria • Add missing failure cases • Cap negotiation at two rounds</li><li>Agreedcontract</li><li>Why it matters: the Planner stays high-level, but each sprint still lands on a testable definition of done.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">09</div>
+              <h2>Files on Disk, Not Chat History</h2>
+              <ul><li>09</li><li>Copilot skill artifacts harnessa-spec.mdharnessa-gen-report.mdharnessa-eval.md  Benchmark harness planner/spec.mdcontracts/evaluations/telemetry/</li><li>Why files win • Full audit trail • Human-readable handoffs • Resumability after crashes • Clean phase boundaries between agents</li><li>Every write is atomic — crash-safe by design.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">10</div>
+              <h2>5 Benchmarks, 2 Modes, Real Code</h2>
+              <ul><li>10</li><li>Benchmark</li><li>Lang</li><li>Challenge</li><li>small-bugfix-python</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">11</div>
+              <h2>Solo FAIL → Trio PASS</h2>
+              <ul><li>11</li><li>N=11 total runs — small sample, but the fullstack benchmark produced a categorical result, not a marginal score bump.</li><li>Solo FAIL Functionality 4 / 10 Average score 6.25 Duration 383s Broken WebSocket notifications</li><li>Trio PASS Functionality 8 / 10 Average score 8.0 Duration 619s (1.6×) Working WebSocket notifications</li><li>+4 functionality</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">12</div>
+              <h2>Trio Won the Tests That Mattered</h2>
+              <ul><li>12</li><li>Python bugfix</li><li>PASS 8.5</li><li>PASS 9.5</li><li>Trio</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">13</div>
+              <h2>The Feedback Loop Works</h2>
+              <ul><li>13</li><li>0</li><li>2</li><li>4</li><li>6</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">14</div>
+              <h2>5 Confirmed, 2 Partial, 2 Inconclusive</h2>
+              <ul><li>14</li><li>Confirmed Separating generator and evaluator is a strong lever Scores improve over iterations Evaluator worth cost only beyond solo capability Solo agents have self-evaluation failure Claude is a poor QA agent out of the box</li><li>Partial Harness output is categorically different — but only on complex tasks Planner adds more structure than scope expansion</li><li>Inconclusive Criteria wording steers output Harness assumptions go stale with new models</li><li>Bottom line: the article mostly holds up, but the strongest signal appears exactly where the task is hard enough to break a solo agent.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">15</div>
+              <h2>We’re Not Alone — This Is an Industry Pattern</h2>
+              <ul><li>15</li><li>Jun 2025 Anthropic research system Lead agent + subagents90.2% better than single-agent</li><li>Feb 2026 Anthropic C compiler 16 parallel agents“Harness matters more than agents”</li><li>Mar 2026 Harness Design article Generator ↔ evaluator loopplanner expands scope</li><li>2026 Claude Code coordinator “Do not rubber-stamp weak work”anti-sycophancy ships in product</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">16</div>
+              <h2>The Community Is Already Here</h2>
+              <ul><li>16</li><li>Adversarial patternDisagreement is signal</li><li>GStack  /review → /codexindependent second opinion</li><li>ClawCompany productized harness workflow</li><li>OpenHands agent SDK + orchestration</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">17</div>
+              <h2>What the Evaluator Catches (That Solo Would Ship)</h2>
+              <ul><li>17</li><li>Iteration 1 — rejected 1,206-line index.ts monolith CDN React + Babel string template 0 tests · 0 real components A solo agent would have shipped this.</li><li>Iteration 2 — passed 32-file rebuild React + Vite + Tailwind + React Router 6 components · 4 pages · 7 tests Spec survived; architecture got rebuilt.</li><li>+4,335−2,97336 filechanges</li><li>The evaluator turned a technically-working monolith into a production-shape rebuild — exactly the kind of upgrade solo self-evaluation misses.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">18</div>
+              <h2>It’s Not Always Worth It</h2>
+              <ul><li>18</li><li>Use Trio • Features touching 3+ files • Unfamiliar bugs with unclear root cause • Architecture refactors • Full-stack features • Anything where “does it actually work?” is uncertain</li><li>Skip It • Single-line fixes • Formatting or linting • Dependency bumps • Tasks where you already know the fix • Simple, well-understood changes</li><li>Rule of thumb: if a solo agent gets it right on the first try, trio is just overhead. The sweet spot is medium-complexity work at the edge of model capability.</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">19</div>
+              <h2>What We Found That the Article Didn’t Cover</h2>
+              <ul><li>19</li><li>1 Planner value = structure, not scope The spec gave the generator a roadmap. On medium tasks that structure enabled correct first attempts; on small tasks it was overhead.</li><li>2 Evaluator leniency persists Even with hard rules, we still saw func=8 with 50% tests failing. Guardrails help, but skepticism remains an active calibration problem.</li><li>3 Telemetry keeps the claims honest Every run emits structured JSON. No “it feels better” hand-waving — if you can’t measure it, you can’t trust it.</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">20</div>
+              <h2>One Command, Three Agents</h2>
+              <ul><li>20</li><li>copilot -p &#x27;/harnessa Fix the authentication bug&#x27; --allow-all</li><li>Planner Reads the codeWrites harnessa-spec.md</li><li>Generator Reads only the specWrites harnessa-gen-report.md</li><li>Evaluator Reads report + diff + hidden testsWrites harnessa-eval.md</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">21</div>
+              <h2>When Should You Use This?</h2>
+              <ul><li>21</li><li>Decision rule If a solo agent gets it right first try → don’t add overhead.If the task sits at the edge of capability → trio is insurance.</li><li>Model tiering Opus for plan + evaluationSonnet for building volume Industry practice — not tested in our experiments</li><li>Round-robin idea Claude plansGPT buildsGemini evaluates Conjecture — immediate next experiment, not validated here</li><li>Solo Known fixsmall changelow downside if wrong</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">22</div>
+              <h2>The Quality Ceiling is Real. Architecture Breaks Through It.</h2>
+              <ul><li>22</li><li>When your solo agent ships broken code, the problem is not just the model — it’s the architecture around the model. Separating building from evaluation is a proven, measurable lever.</li><li>“The space of interesting harness combinations doesn’t shrink as models improve. It moves.” Anthropic Labs</li><li>github.com/ridermw/harnessa · MIT License · Benchmarks + telemetry included</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">23</div>
+              <h2>Appendix — Full Experiment Matrix</h2>
+              <ul><li>23</li><li>Run ID</li><li>Benchmark</li><li>Mode</li><li>Iter</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">24</div>
+              <h2>Appendix — Evaluator Reliability Metrics</h2>
+              <ul><li>24</li><li>Rubber-stamp incidents</li><li>0 explicit</li><li>Refusal-to-be-negative</li><li>1 incident</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">25</div>
+              <h2>Appendix — Difficulty Classification</h2>
+              <ul><li>25</li><li>Higher solo capability →</li><li>Trio uplift</li><li>Python bugfix</li><li>marginal</li></ul>
+            </section>
+            
+            <section class="slide light">
+              <div class="slide-number">26</div>
+              <h2>Appendix — Grading Criteria Details</h2>
+              <ul><li>26</li><li>backend.yaml</li><li>Product Depth · HIGH · threshold 7 Real business logic, edge cases, thoughtful data modeling</li><li>Functionality · HIGH · threshold 6 Core workflow works end-to-end with proper error handling</li><li>Code Quality · MEDIUM · threshold 5 Clean modules, naming, structure, maintainability</li></ul>
+            </section>
+            
+            <section class="slide dark">
+              <div class="slide-number">27</div>
+              <h2>Appendix — Detailed System Diagram</h2>
+              <ul><li>27</li><li>Human prompt</li><li>Planner spec.md + design direction</li><li>Generator builds against agreed sprint contract</li><li>Evaluator Playwright QA + scoring + bug reports</li></ul>
+            </section>
+            
+      </section>
+    </main>
+  </body>
+</html>

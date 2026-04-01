@@ -156,6 +156,7 @@ a {
   background: rgba(5, 15, 24, 0.68);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
+  transition: transform 280ms ease, opacity 200ms ease;
 }
 
 .progress-rail__header {
@@ -212,10 +213,42 @@ a {
   display: none;
 }
 
+/* --- Collapsible rail drawer -------------------------------------------- */
+
+.rail-toggle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Rail closed state (desktop) */
+.presentation-app[data-rail-open="false"] .progress-rail {
+  transform: translateX(calc(100% + 2rem));
+  pointer-events: none;
+  opacity: 0;
+}
+
+.presentation-app[data-rail-open="false"] .scene-stack {
+  padding-right: 0;
+}
+
+.presentation-app[data-rail-open="false"] .scene__content,
+.presentation-app[data-rail-open="false"] .scene__header {
+  width: min(1080px, calc(100vw - 4rem));
+}
+
+.scene__content,
+.scene__header {
+  transition: width 280ms ease;
+}
+
 .scene-stack {
   position: relative;
   z-index: 1;
   padding-right: 26rem;
+  transition: padding-right 280ms ease;
 }
 
 .scene {
@@ -977,11 +1010,22 @@ a {
   .scene-nav__item,
   .iteration-chart__line,
   .hero-signal__path,
-  .hero-signal__pulse circle {
+  .hero-signal__pulse circle,
+  .progress-rail,
+  .scene-stack,
+  .scene__content,
+  .scene__header {
     animation: none !important;
     transition: none !important;
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  /* Still hide the rail when closed — just skip the slide animation */
+  .presentation-app[data-rail-open="false"] .progress-rail {
+    transform: none !important;
+    opacity: 0 !important;
+    pointer-events: none;
   }
 }
 
@@ -1000,6 +1044,12 @@ a {
   .scene__header {
     width: min(1080px, calc(100vw - 2rem));
   }
+
+  /* When rail is closed at this breakpoint, just collapse it */
+  .presentation-app[data-rail-open="false"] .progress-rail {
+    display: none;
+    transform: none;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -1010,6 +1060,21 @@ a {
 
   .progress-rail {
     display: none;
+  }
+
+  /* On mobile, opening the rail shows it as a full-width overlay */
+  .presentation-app[data-rail-open="true"] .progress-rail {
+    display: block;
+    position: fixed;
+    top: 6.5rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+    margin: 0;
+    z-index: 25;
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .hero-layout,

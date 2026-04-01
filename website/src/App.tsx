@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { scenes, sceneAliases, type SceneId } from './content/scenes';
+import { OperatorRail, useRailState } from './components/navigation/OperatorRail';
 import {
   heroMetrics,
   anthropicSparkComparison,
@@ -126,6 +127,7 @@ function clampSceneId(value: string | null): SceneId | null {
 
 function App(): JSX.Element {
   const reducedMotion = usePrefersReducedMotion();
+  const { railOpen } = useRailState();
   const initialScene = useMemo<SceneId>(() => {
     if (typeof window === 'undefined') {
       return 'hero';
@@ -299,7 +301,7 @@ function App(): JSX.Element {
   }, [appendixOpen, jumpToScene, sceneIndex]);
 
   return (
-    <div className="presentation-app">
+    <div className="presentation-app" data-rail-open={railOpen}>
       <div className="ambient-grid" />
       <header className="topbar">
         <div className="topbar__brand">
@@ -324,28 +326,12 @@ function App(): JSX.Element {
         </div>
       </header>
 
-      <aside className="progress-rail" aria-label="Scene navigation">
-        <div className="progress-rail__header">
-          <span className="chrome-pill">Operator rail</span>
-          <p>Use ↑ ↓ or J / K to move. Press A for appendix.</p>
-        </div>
-        <nav className="scene-nav">
-          {scenes.map((scene) => (
-            <button
-              key={scene.id}
-              className={scene.id === activeScene ? 'scene-nav__item is-active' : 'scene-nav__item'}
-              onClick={() => jumpToScene(scene.id)}
-              type="button"
-            >
-              <span>{scene.short}</span>
-              <div>
-                <strong>{scene.eyebrow}</strong>
-                <small>{scene.title}</small>
-              </div>
-            </button>
-          ))}
-        </nav>
-      </aside>
+      <OperatorRail
+        scenes={scenes}
+        activeScene={activeScene}
+        onJumpToScene={(id) => jumpToScene(id as SceneId)}
+        appendixOpen={appendixOpen}
+      />
 
       <div className="mobile-warning">
         Optimized for desktop / projector. Mobile keeps all content, but the intended experience is widescreen.

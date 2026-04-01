@@ -46,6 +46,7 @@ import {
   evaluatorLeniencyObservations,
   measurementCaveats,
   showcaseKeyLessons,
+  showcaseComparison,
   demoFlow,
   roundRobinCaveat,
   closingQuote,

@@ -242,7 +242,7 @@ a {
 
 .presentation-app[data-rail-open="false"] .scene__content,
 .presentation-app[data-rail-open="false"] .scene__header {
-  width: min(1080px, calc(100vw - 4rem));
+  width: min(1400px, calc(100vw - 4rem));
 }
 
 .scene__content,
@@ -258,10 +258,21 @@ a {
 }
 
 .scene {
-  min-height: 100svh;
-  padding: 8rem 2rem 3rem;
+  min-height: 80svh;
+  padding: 6rem 2rem 4rem;
   display: flex;
+  align-items: center;
+}
+
+.scene--content-heavy {
+  min-height: auto;
   align-items: flex-start;
+  flex-direction: column;
+}
+
+.scene--content-heavy .scene__body {
+  width: min(1280px, calc(100vw - 30rem));
+  margin: 0 auto;
 }
 
 .scene--hero,
@@ -271,20 +282,29 @@ a {
 
 .scene__content,
 .scene__header {
-  width: min(1080px, calc(100vw - 30rem));
+  width: min(1280px, calc(100vw - 30rem));
   margin: 0 auto;
 }
 
+/* Wrapper for scenes with SceneIntro (left) + multiple body blocks (right) */
+.scene__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .scene__header {
-  margin-bottom: 2.4rem;
+  margin-bottom: 1.5rem;
 }
 
 .scene__eyebrow {
   display: inline-flex;
-  margin-bottom: 1rem;
+  margin-bottom: 0.6rem;
   color: var(--signal-blue);
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -292,19 +312,38 @@ a {
 .scene__title {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(2.7rem, 5vw, 5.4rem);
-  line-height: 0.94;
-  letter-spacing: -0.05em;
+  font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
 .scene__lede {
   max-width: 48rem;
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0;
   color: var(--muted);
-  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
-  line-height: 1.7;
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+  line-height: 1.65;
+}
+
+/* Split layout: text left, diagram right */
+.scene--with-diagram > .scene__content {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.4fr);
+  gap: 2.5rem;
+  align-items: start;
+  width: min(1400px, calc(100vw - 30rem));
+}
+
+.scene--with-diagram .scene__header {
+  width: auto;
+  margin-bottom: 0;
+}
+
+.scene--with-diagram .scene__diagram {
+  width: 100%;
+  min-width: 0;
 }
 
 .hero-layout,
@@ -313,6 +352,16 @@ a {
   grid-template-columns: 1.2fr 1fr;
   gap: 2rem;
   align-items: center;
+}
+
+.scene--hero .scene__title {
+  font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.scene--closing .scene__title {
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  line-height: 1.05;
 }
 
 .hero-copy,
@@ -338,7 +387,7 @@ a {
 
 .hero-visual {
   position: relative;
-  min-height: 31rem;
+  min-height: 22rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -454,7 +503,7 @@ a {
 
 .topology-flow {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
 }
 
@@ -481,12 +530,13 @@ a {
 
 .topology-node__name {
   color: var(--node-accent);
+  font-size: 0.78rem;
 }
 
 .topology-node strong {
   display: block;
   margin-bottom: 0.8rem;
-  font-size: 1.08rem;
+  font-size: 0.88rem;
 }
 
 .topology-node ul,

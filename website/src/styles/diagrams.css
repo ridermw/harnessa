@@ -85,6 +85,8 @@
   display: flex;
   align-items: center;
   gap: 0;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .dg-flow--vertical .dg-flow__track {
@@ -104,12 +106,14 @@
 .dg-flow__node {
   background: var(--panel);
   border: 1px solid var(--node-accent, var(--border));
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  min-width: 120px;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-width: 80px;
+  max-width: 200px;
   text-align: center;
   position: relative;
   transition: border-color 0.3s ease;
+  font-size: 0.82rem;
 }
 
 .dg-flow__node:hover {
@@ -119,10 +123,10 @@
 .dg-flow__edge {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0 0.4rem;
+  gap: 0.3rem;
+  padding: 0 0.2rem;
   position: relative;
-  min-width: 60px;
+  min-width: 36px;
   justify-content: center;
   flex-direction: column;
 }
@@ -135,7 +139,7 @@
 }
 
 .dg-flow__arrow {
-  width: 40px;
+  width: 24px;
   height: 2px;
   background: var(--border);
   position: relative;
@@ -196,14 +200,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
   position: relative;
+  width: 50%;
+  margin-left: auto;
 }
 
 .dg-flow__back-edge::before {
   content: '';
-  width: 60%;
+  flex: 1;
   height: 2px;
   background: repeating-linear-gradient(
     90deg,
@@ -408,6 +414,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
+}
+
+.dg-timeline__body .dg-node__label {
+  white-space: nowrap;
 }
 
 .dg-timeline__connector {
@@ -445,7 +456,7 @@
   align-items: center;
   gap: 0;
   flex: 1;
-  max-width: 220px;
+  max-width: 280px;
 }
 
 .dg-tree__edge {
@@ -489,6 +500,11 @@
   border-radius: 8px;
   padding: 0.75rem 1rem;
   text-align: center;
+  min-width: 160px;
+}
+
+.dg-tree__node .dg-node__label {
+  white-space: nowrap;
 }
 
 .dg-tree__node--leaf {
@@ -799,8 +815,8 @@
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   text-align: center;
-  min-width: 140px;
-  max-width: 220px;
+  min-width: 160px;
+  max-width: 280px;
   flex: 1;
 }
 

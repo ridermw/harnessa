@@ -399,7 +399,7 @@ function App(): JSX.Element {
         <section
           id="anthropic-spark"
           ref={setSceneRef('anthropic-spark')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'anthropic-spark'}
         >
           <SceneIntro
@@ -545,37 +545,63 @@ function App(): JSX.Element {
         <section
           id="trio-pipeline"
           ref={setSceneRef('trio-pipeline')}
-          className="scene"
+          className="scene scene--with-diagram"
           data-active={activeScene === 'trio-pipeline'}
         >
-          <SceneIntro
-            eyebrow="System View"
-            title="Planner → Generator ↔ Evaluator"
-            lede="The architecture matters more than one bigger context window. Separate roles, explicit contracts, and independent evaluation create the quality leverage."
-          />
-          <div className="architecture-grid reveal delay-1">
-            <DiagramRenderer spec={diagram01TrioPipeline} />
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="System View"
+              title="Planner → Generator ↔ Evaluator"
+              lede="The architecture matters more than one bigger context window. Separate roles, explicit contracts, and independent evaluation create the quality leverage."
+            />
+            <div className="scene__diagram reveal delay-1">
+              <DiagramRenderer spec={diagram01TrioPipeline} />
+            </div>
           </div>
         </section>
 
         <section
           id="goodhart-boundary"
           ref={setSceneRef('goodhart-boundary')}
-          className="scene"
+          className="scene scene--with-diagram"
           data-active={activeScene === 'goodhart-boundary'}
         >
-          <SceneIntro
-            eyebrow="Isolation"
-            title="The Goodhart boundary"
-            lede={`"${goodhartBoundary.principle}" — If the generator can see the acceptance tests, it optimizes for them instead of building real quality.`}
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram02GoodhartBoundary} />
-          </div>
-          <div className="aggregate-strip reveal delay-3">
+          <div className="scene__content">
             <div>
-              <span className="chrome-pill">Mechanism</span>
-              <strong>{goodhartBoundary.mechanism}</strong>
+              <SceneIntro
+                eyebrow="Isolation"
+                title="The Goodhart boundary"
+                lede={`"${goodhartBoundary.principle}" — Goodhart's Law means that if the generator can see the acceptance tests, it will optimize for passing them rather than building genuinely correct software.`}
+              />
+              <div className="panel reveal delay-2" style={{ marginTop: '1.5rem' }}>
+                <span className="panel__tag">How Harnessa enforces it</span>
+                <p className="panel__body">
+                  The Generator and Evaluator run in separate git worktrees. The Generator's worktree uses <code>git sparse-checkout</code> to physically exclude the <code>_eval/</code> directory — it cannot see acceptance tests, fixtures, or hidden grading criteria. The Evaluator's worktree has full access to everything including <code>_eval/</code>. This is not just a convention — it's filesystem-level enforcement.
+                </p>
+              </div>
+              <div className="aggregate-strip reveal delay-3">
+                <div>
+                  <span className="chrome-pill">Mechanism</span>
+                  <strong>{goodhartBoundary.mechanism}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="scene__diagram reveal delay-1">
+              <DiagramRenderer spec={diagram02GoodhartBoundary} />
+              <div className="two-up-grid" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
+                <article className="panel">
+                  <span className="panel__tag" style={{ color: 'var(--signal-green)' }}>Generator sees</span>
+                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
+                    {goodhartBoundary.generatorTree.map(f => <li key={f}><code>{f}</code></li>)}
+                  </ul>
+                </article>
+                <article className="panel">
+                  <span className="panel__tag" style={{ color: 'var(--signal-amber)' }}>Evaluator sees</span>
+                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
+                    {goodhartBoundary.evaluatorTree.map(f => <li key={f}><code>{f}</code></li>)}
+                  </ul>
+                </article>
+              </div>
             </div>
           </div>
         </section>
@@ -583,51 +609,59 @@ function App(): JSX.Element {
         <section
           id="sprint-contracts"
           ref={setSceneRef('sprint-contracts')}
-          className="scene"
+          className="scene scene--with-diagram"
           data-active={activeScene === 'sprint-contracts'}
         >
-          <SceneIntro
-            eyebrow="Contracts"
-            title="Spec-driven sprint agreements"
-            lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram03SprintContract} />
-          </div>
-          <div className="aggregate-strip reveal delay-3">
-            <p>{sprintContracts.keyInsight}</p>
+          <div className="scene__content">
+            <div>
+              <SceneIntro
+                eyebrow="Contracts"
+                title="Spec-driven sprint agreements"
+                lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
+              />
+              <div className="aggregate-strip reveal delay-3">
+                <p>{sprintContracts.keyInsight}</p>
+              </div>
+            </div>
+            <div className="scene__diagram reveal delay-1">
+              <DiagramRenderer spec={diagram03SprintContract} />
+            </div>
           </div>
         </section>
 
         <section
           id="files-on-disk"
           ref={setSceneRef('files-on-disk')}
-          className="scene"
+          className="scene scene--with-diagram"
           data-active={activeScene === 'files-on-disk'}
         >
-          <SceneIntro
-            eyebrow="Communication"
-            title="Files on disk, not chat history"
-            lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram04FilesHandoff} />
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Communication"
+              title="Files on disk, not chat history"
+              lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
+            />
+            <div className="scene__diagram reveal delay-1">
+              <DiagramRenderer spec={diagram04FilesHandoff} />
+            </div>
           </div>
         </section>
 
         <section
           id="telemetry-layer"
           ref={setSceneRef('telemetry-layer')}
-          className="scene"
+          className="scene scene--with-diagram"
           data-active={activeScene === 'telemetry-layer'}
         >
-          <SceneIntro
-            eyebrow="Instrumentation"
-            title="Every run produces structured evidence"
-            lede={telemetryDetail.description}
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram05TelemetryStack} />
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Instrumentation"
+              title="Every run produces structured evidence"
+              lede={telemetryDetail.description}
+            />
+            <div className="scene__diagram reveal delay-1">
+              <DiagramRenderer spec={diagram05TelemetryStack} />
+            </div>
           </div>
         </section>
 
@@ -636,7 +670,7 @@ function App(): JSX.Element {
         <section
           id="karpathy-problem"
           ref={setSceneRef('karpathy-problem')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'karpathy-problem'}
         >
           <SceneIntro
@@ -644,24 +678,40 @@ function App(): JSX.Element {
             title="The Karpathy problem"
             lede={karpathyQuote.insight}
           />
-          <div className="critic-grid">
-            <article className="panel quote-panel reveal delay-1">
-              <span className="panel__tag">Karpathy problem</span>
-              <p className="quote-panel__text">
-                "{karpathyQuote.text}"
-              </p>
-              <cite>{karpathyQuote.author}</cite>
-            </article>
-            <article className="panel verdict-panel reveal delay-2">
-              <span className="panel__tag">Evaluator posture</span>
-              <div className="verdict-code">
-                <pre>{`{ "functionality": 1, "verdict": "FAIL" }`}</pre>
-                <pre>{`{ "functionality": 10, "verdict": "PASS" }`}</pre>
-              </div>
-              <p>
-                The same generator can move from broken to shippable if the critic stays skeptical enough to hold the line.
-              </p>
-            </article>
+          <div className="scene__body">
+            <div className="critic-grid">
+              <article className="panel quote-panel reveal delay-1">
+                <span className="panel__tag">Karpathy problem</span>
+                <p className="quote-panel__text">
+                  "{karpathyQuote.text}"
+                </p>
+                <cite>{karpathyQuote.author}</cite>
+              </article>
+              <article className="panel verdict-panel reveal delay-2">
+                <span className="panel__tag">Evaluator posture</span>
+                <div className="verdict-code">
+                  <pre>{`{ "functionality": 1, "verdict": "FAIL" }`}</pre>
+                  <pre>{`{ "functionality": 10, "verdict": "PASS" }`}</pre>
+                </div>
+                <p>
+                  The same generator can move from broken to shippable if the critic stays skeptical enough to hold the line.
+                </p>
+              </article>
+            </div>
+            <div className="two-up-grid">
+              <article className="panel reveal delay-3">
+                <span className="panel__tag">The Pattern</span>
+                <p className="panel__body">An LLM asked to review its own work will find real issues — then rationalize them away. It's not that the model can't identify problems. It's that the same model that created the code is incentivized to defend it.</p>
+              </article>
+              <article className="panel reveal delay-4">
+                <span className="panel__tag">The Harnessa Solution</span>
+                <p className="panel__body">Separate the builder from the critic. The evaluator cannot see the generator's reasoning or approach. It only sees the output, the tests, and the criteria. This eliminates self-review bias.</p>
+              </article>
+            </div>
+            <div className="panel reveal delay-5">
+              <span className="panel__tag">Why this matters for harness design</span>
+              <p className="panel__body">If the evaluator is too agreeable, the feedback loop produces diminishing returns. Calibration — anti-sycophancy rules, threshold-based gating, rubber-stamp detection — is what makes the adversarial architecture actually adversarial.</p>
+            </div>
           </div>
         </section>
 
@@ -820,7 +870,7 @@ function App(): JSX.Element {
         <section
           id="full-scorecard"
           ref={setSceneRef('full-scorecard')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'full-scorecard'}
         >
           <SceneIntro
@@ -948,7 +998,7 @@ function App(): JSX.Element {
         <section
           id="claims-partial"
           ref={setSceneRef('claims-partial')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'claims-partial'}
         >
           <SceneIntro
@@ -985,7 +1035,7 @@ function App(): JSX.Element {
         <section
           id="evaluator-leniency"
           ref={setSceneRef('evaluator-leniency')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'evaluator-leniency'}
         >
           <SceneIntro
@@ -1021,7 +1071,7 @@ function App(): JSX.Element {
         <section
           id="industry-timeline"
           ref={setSceneRef('industry-timeline')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'industry-timeline'}
         >
           <SceneIntro
@@ -1029,15 +1079,21 @@ function App(): JSX.Element {
             title="This is not one lab's quirky workflow"
             lede="Anthropic, Claude Code, OpenAI Symphony, and community toolchains keep rediscovering the same foundations: isolated workspaces, specialized roles, and evaluation as architecture."
           />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram09IndustryTimeline} />
+          <div className="scene__body">
+            <div className="reveal delay-1">
+              <DiagramRenderer spec={diagram09IndustryTimeline} />
+            </div>
+            <div className="panel reveal delay-2">
+              <span className="panel__tag">⚠️ Industry context — not Harnessa experiment evidence</span>
+              <p className="panel__body">These events show convergence toward multi-agent orchestration across the industry. Harnessa validates one specific architecture; the timeline shows that the broader pattern is not an isolated bet.</p>
+            </div>
           </div>
         </section>
 
         <section
           id="ecosystem-network"
           ref={setSceneRef('ecosystem-network')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'ecosystem-network'}
         >
           <SceneIntro
@@ -1045,15 +1101,37 @@ function App(): JSX.Element {
             title="Outside voices confirm the direction"
             lede="Independent teams and projects keep arriving at the same architectural patterns — isolated agents, structured evaluation, and adversarial feedback loops."
           />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram10EcosystemNetwork} />
+          <div className="scene__body">
+            <div className="reveal delay-1">
+              <DiagramRenderer spec={diagram10EcosystemNetwork} />
+            </div>
+            <div className="scorecard-list">
+              <article className="score-row reveal delay-2">
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">Independent validation</span>
+                    <h3>Cross-model review pattern</h3>
+                  </div>
+                </div>
+                <p>Using one model to evaluate another model's work — the same principle Harnessa uses — is emerging independently across toolchains. GStack's /codex and /review skills implement this as a second-opinion gate.</p>
+              </article>
+              <article className="score-row reveal delay-3">
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">Open source</span>
+                    <h3>OpenHands and community harnesses</h3>
+                  </div>
+                </div>
+                <p>Open-source projects are building their own multi-agent evaluation loops. The pattern is converging on: isolated workspaces, structured evaluation criteria, and adversarial feedback as architecture rather than prompting.</p>
+              </article>
+            </div>
           </div>
         </section>
 
         <section
           id="showcase-rebuild"
           ref={setSceneRef('showcase-rebuild')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'showcase-rebuild'}
         >
           <SceneIntro
@@ -1091,7 +1169,7 @@ function App(): JSX.Element {
         <section
           id="demo-flow"
           ref={setSceneRef('demo-flow')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'demo-flow'}
         >
           <SceneIntro
@@ -1139,7 +1217,7 @@ function App(): JSX.Element {
         <section
           id="decision-tree"
           ref={setSceneRef('decision-tree')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'decision-tree'}
         >
           <SceneIntro
@@ -1147,15 +1225,37 @@ function App(): JSX.Element {
             title="When trio is worth the overhead"
             lede="The trio is not a religion. It is an operating pattern for tasks where solo output is likely to be wrong, incomplete, or self-flatteringly over-scored."
           />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram13DecisionTree} />
+          <div className="scene__body">
+            <div className="reveal delay-1">
+              <DiagramRenderer spec={diagram13DecisionTree} />
+            </div>
+            <div className="two-up-grid">
+              <article className="panel reveal delay-2">
+                <span className="panel__tag">Use trio when</span>
+                <ul className="decision-list">
+                  <li>Multi-file features where integration matters</li>
+                  <li>Uncertain correctness — "will this actually work?"</li>
+                  <li>Medium-complexity tasks at the edge of model capability</li>
+                  <li>Broken output is expensive to debug manually</li>
+                </ul>
+              </article>
+              <article className="panel reveal delay-3">
+                <span className="panel__tag">Skip trio when</span>
+                <ul className="decision-list">
+                  <li>Single-line fixes or simple refactors</li>
+                  <li>Dependency version bumps</li>
+                  <li>Tasks with known, verified answers</li>
+                  <li>When the overhead costs more than the risk</li>
+                </ul>
+              </article>
+            </div>
           </div>
         </section>
 
         <section
           id="model-tiering"
           ref={setSceneRef('model-tiering')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'model-tiering'}
         >
           <SceneIntro
@@ -1163,15 +1263,41 @@ function App(): JSX.Element {
             title="Opus plans, Sonnet builds"
             lede="Not every agent needs the most expensive model. Match model capability to role: reasoning-heavy roles get the premium model, execution roles get the fast one."
           />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram14ModelTiering} />
+          <div className="scene__body">
+            <div className="reveal delay-1">
+              <DiagramRenderer spec={diagram14ModelTiering} />
+            </div>
+            <div className="panel reveal delay-2">
+              <span className="panel__tag">⚠️ Industry pattern — not directly tested in Harnessa V1</span>
+              <p className="panel__body">Harnessa V1 used the same model (claude-sonnet-4) for all roles. Model tiering — using premium reasoning models for planning/evaluation and faster models for execution — is an industry pattern observed in Claude Code's coordinator model, not a validated Harnessa finding.</p>
+            </div>
+            <div className="two-up-grid">
+              <article className="panel reveal delay-3">
+                <span className="panel__tag">Reasoning tier (Opus-class)</span>
+                <ul className="decision-list">
+                  <li>Planning and spec expansion</li>
+                  <li>Evaluation and grading</li>
+                  <li>Contract negotiation</li>
+                  <li>Higher cost per token, fewer calls</li>
+                </ul>
+              </article>
+              <article className="panel reveal delay-4">
+                <span className="panel__tag">Execution tier (Sonnet-class)</span>
+                <ul className="decision-list">
+                  <li>Code generation and implementation</li>
+                  <li>Test writing</li>
+                  <li>Iteration on feedback</li>
+                  <li>Lower cost per token, many calls</li>
+                </ul>
+              </article>
+            </div>
           </div>
         </section>
 
         <section
           id="round-robin"
           ref={setSceneRef('round-robin')}
-          className="scene"
+          className="scene scene--content-heavy"
           data-active={activeScene === 'round-robin'}
         >
           <SceneIntro
@@ -1179,13 +1305,15 @@ function App(): JSX.Element {
             title="Cross-model evaluation and role rotation"
             lede="What happens when different models evaluate each other's work? The theory: disagreements between models surface blind spots that same-model evaluation misses."
           />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram15RoundRobin} />
-          </div>
-          <div className="aggregate-strip reveal delay-3">
-            <div>
-              <span className="chrome-pill">⚠️ Industry context, not Harnessa evidence</span>
-              <strong>{roundRobinCaveat}</strong>
+          <div className="scene__body">
+            <div className="reveal delay-1">
+              <DiagramRenderer spec={diagram15RoundRobin} />
+            </div>
+            <div className="aggregate-strip reveal delay-3">
+              <div>
+                <span className="chrome-pill">⚠️ Industry context, not Harnessa evidence</span>
+                <strong>{roundRobinCaveat}</strong>
+              </div>
             </div>
           </div>
         </section>

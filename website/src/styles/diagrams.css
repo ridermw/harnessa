@@ -8,6 +8,7 @@
 
 [data-diagram-id] {
   width: 100%;
+  overflow-x: hidden;
 }
 
 .dg-annotation {
@@ -53,6 +54,8 @@
   font-weight: 600;
   color: var(--text);
   display: block;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .dg-node__detail {
@@ -184,6 +187,9 @@
   font-size: 0.65rem;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
 
 .dg-flow__back-edge {
@@ -867,6 +873,13 @@
 /* ── Responsive ─────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  /* Diagram containers: prevent any horizontal overflow */
+  [data-diagram-id] {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Flow: stack nodes vertically */
   .dg-flow--horizontal .dg-flow__track {
     flex-direction: column;
   }
@@ -890,6 +903,28 @@
     border-left: 5px solid transparent;
   }
 
+  .dg-flow__node {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .dg-flow__edge {
+    min-width: unset;
+    padding: 0.3rem 0;
+  }
+
+  .dg-flow__edge-label {
+    white-space: normal;
+    max-width: none;
+    text-align: center;
+  }
+
+  /* Hide back-edge pseudo-elements on mobile (simplify) */
+  .dg-flow__back-edge::before {
+    width: 40%;
+  }
+
+  /* Comparison: stack vertically */
   .dg-comparison__panels {
     grid-template-columns: 1fr;
     gap: 0.5rem;
@@ -907,6 +942,7 @@
     bottom: auto;
   }
 
+  /* Tree: stack branches vertically */
   .dg-tree__branches {
     flex-direction: column;
     gap: 1rem;
@@ -918,6 +954,18 @@
     width: 100%;
   }
 
+  .dg-tree__edge-label {
+    position: static;
+    transform: none;
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Grid: card-like rows instead of table-like */
+  .dg-grid__header {
+    display: none;
+  }
+
   .dg-grid__row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
@@ -927,6 +975,7 @@
     text-align: left;
   }
 
+  /* State: stack vertically */
   .dg-state {
     flex-direction: column;
     gap: 0;
@@ -955,6 +1004,7 @@
     width: 100%;
   }
 
+  /* Cycle: stack vertically */
   .dg-cycle__ring {
     flex-direction: column;
   }
@@ -978,9 +1028,29 @@
     border-left: 5px solid transparent;
   }
 
+  .dg-cycle__node {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .dg-cycle__edge {
+    padding: 0.3rem 0;
+  }
+
   .dg-cycle__center {
     width: 110px;
     height: 110px;
+  }
+
+  /* Stack diagram: single column on narrow */
+  .dg-stack__layers {
+    grid-template-columns: 1fr;
+  }
+
+  /* Timeline: tighter on mobile */
+  .dg-timeline__stamp {
+    min-width: 3.5rem;
+    font-size: 0.65rem;
   }
 }
 
@@ -993,5 +1063,12 @@
   .dg-stack__layer,
   .dg-grid__row {
     transition: none;
+  }
+
+  .dg-flow__node:hover,
+  .dg-cycle__node:hover,
+  .dg-stack__layer:hover {
+    border-color: inherit;
+    box-shadow: none;
   }
 }

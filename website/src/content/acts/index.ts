@@ -1,12 +1,3 @@
-/**
- * Barrel re-export — all presentation content is now organized in act modules
- * and the scene manifest. This file exists for backward compatibility.
- */
-
-// Scene manifest (single source of truth for scene IDs, ordering, navigation)
-export { scenes, sceneAliases, type SceneId, type SceneMeta, type MetricCard } from './scenes';
-
-// Act content modules
 export {
   heroMetrics,
   anthropicSparkComparison,
@@ -16,24 +7,36 @@ export {
   problemWalls,
   adversarialInsightPoints,
   adversarialQuote,
+} from './act1-thesis';
+
+export {
   architectureStages,
   goodhartBoundary,
   sprintContracts,
   filesOnDisk,
   telemetrySignals,
   telemetryDetail,
+} from './act2-architecture';
+
+export {
   karpathyQuote,
   criticRules,
   criteriaThresholds,
   appendixCriteria,
   experimentDesign,
   benchmarkMatrix,
+} from './act3-calibration';
+
+export {
   evidenceMetrics,
   scorecardRows,
   difficultyZones,
   iterationSeries,
   claimsConfirmed,
   appendixRuns,
+} from './act4-results';
+
+export {
   claimsPartial,
   claimsInconclusive,
   evaluatorLeniencyObservations,
@@ -42,6 +45,9 @@ export {
   showcaseComparison,
   showcaseKeyLessons,
   appendixCaveats,
+} from './act5-nuance';
+
+export {
   demoFlow,
   useTrio,
   skipTrio,
@@ -50,4 +56,4 @@ export {
   roundRobinCaveat,
   closingQuote,
   citations,
-} from './acts';
+} from './act6-practical';

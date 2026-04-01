@@ -1,25 +1,53 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { scenes, sceneAliases, type SceneId } from './content/scenes';
 import {
-  appendixCaveats,
-  appendixCriteria,
-  appendixRuns,
-  architectureStages,
-  citations,
-  criticRules,
-  evidenceMetrics,
   heroMetrics,
-  iterationSeries,
-  landscapeEvents,
-  problemWalls,
-  scenes,
-  scorecardRows,
-  skipTrio,
+  anthropicSparkComparison,
+  anthropicQuote,
+  wallContext,
+  wallEvaluation,
+  adversarialInsightPoints,
+  adversarialQuote,
+  architectureStages,
+  goodhartBoundary,
+  sprintContracts,
+  filesOnDisk,
   telemetrySignals,
-  tieringRoles,
+  telemetryDetail,
+  karpathyQuote,
+  criticRules,
+  criteriaThresholds,
+  experimentDesign,
+  benchmarkMatrix,
+  evidenceMetrics,
+  scorecardRows,
+  difficultyZones,
+  iterationSeries,
+  claimsConfirmed,
+  claimsPartial,
+  claimsInconclusive,
+  evaluatorLeniencyObservations,
+  landscapeEvents,
+  ecosystemNodes,
+  showcaseComparison,
+  showcaseKeyLessons,
+  demoFlow,
   useTrio,
-  type SceneId,
-} from './content/presentation';
+  skipTrio,
+  tieringRoles,
+  roundRobinConcepts,
+  roundRobinCaveat,
+  closingQuote,
+  appendixRuns,
+  appendixCriteria,
+  appendixCaveats,
+  citations,
+} from './content/acts';
+
+/* ────────────────────────────────────────────────────────────────────
+   Hooks
+   ──────────────────────────────────────────────────────────────────── */
 
 function usePrefersReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -73,14 +101,28 @@ function useAnimatedNumber(
   return value.toFixed(decimals);
 }
 
+/* ────────────────────────────────────────────────────────────────────
+   Helpers
+   ──────────────────────────────────────────────────────────────────── */
+
 function clampSceneId(value: string | null): SceneId | null {
   if (!value) {
     return null;
   }
 
   const match = scenes.find((scene) => scene.id === value);
-  return match?.id ?? null;
+  if (match) {
+    return match.id;
+  }
+
+  // Support old scene IDs via alias map
+  const aliased = sceneAliases[value];
+  return aliased ?? null;
 }
+
+/* ────────────────────────────────────────────────────────────────────
+   App
+   ──────────────────────────────────────────────────────────────────── */
 
 function App(): JSX.Element {
   const reducedMotion = usePrefersReducedMotion();
@@ -94,18 +136,9 @@ function App(): JSX.Element {
   const [appendixOpen, setAppendixOpen] = useState(false);
   const hashReady = useRef(false);
   const navigationLockUntil = useRef(0);
-  const sceneRefs = useRef<Record<SceneId, HTMLElement | null>>({
-    hero: null,
-    problem: null,
-    architecture: null,
-    critic: null,
-    evidence: null,
-    scorecard: null,
-    feedback: null,
-    landscape: null,
-    decision: null,
-    closing: null,
-  });
+  const sceneRefs = useRef(
+    Object.fromEntries(scenes.map((s) => [s.id, null])) as Record<SceneId, HTMLElement | null>,
+  );
 
   const setSceneRef = useCallback(
     (id: SceneId) => (node: HTMLElement | null) => {
@@ -319,6 +352,9 @@ function App(): JSX.Element {
       </div>
 
       <main className="scene-stack">
+
+        {/* ── Act 1 — Thesis & Failure Modes ──────────────────────────── */}
+
         <section
           id="hero"
           ref={setSceneRef('hero')}
@@ -336,7 +372,7 @@ function App(): JSX.Element {
                 it was a broken solo full-stack build turning into a working trio system.
               </p>
               <div className="hero-actions reveal delay-3">
-                  <button className="chrome-button chrome-button--primary" onClick={() => jumpToScene('evidence')} type="button">
+                <button className="chrome-button chrome-button--primary" onClick={() => jumpToScene('headline-result')} type="button">
                   Jump to the headline
                 </button>
                 <button className="chrome-button" onClick={() => setAppendixOpen(true)} type="button">
@@ -364,36 +400,132 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="problem"
-          ref={setSceneRef('problem')}
+          id="anthropic-spark"
+          ref={setSceneRef('anthropic-spark')}
           className="scene"
-          data-active={activeScene === 'problem'}
+          data-active={activeScene === 'anthropic-spark'}
         >
           <SceneIntro
-            eyebrow="Failure Mode"
-            title="Single-agent coding hits two hard walls"
-            lede="The first wall is context degradation. The second is more dangerous: self-evaluation bias. If the same system builds and judges the work, quality gets flattered."
+            eyebrow="Origin"
+            title="From Anthropic article to tested evidence"
+            lede="Anthropic published the harness idea. Harnessa built it, instrumented it, and ran controlled experiments against it. The output is not incrementally better — it is categorically different."
           />
-          <div className="two-up-grid">
-            {problemWalls.map((wall, index) => (
-              <article key={wall.title} className={`panel reveal delay-${index + 1}`}>
-                <span className="panel__tag">{wall.title}</span>
-                <p className="panel__body">{wall.body}</p>
-                <div className="signal-strip">{wall.signal}</div>
+          <div className="scorecard-list">
+            {anthropicSparkComparison.map((row, index) => (
+              <article
+                key={row.approach}
+                className={row.result === 'FAIL' ? 'score-row score-row--featured reveal' : 'score-row reveal'}
+                style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}
+              >
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{row.result}</span>
+                    <h3>{row.approach}</h3>
+                  </div>
+                  <div className="score-row__winner">{row.cost} / {row.time}</div>
+                </div>
+                <p>{row.note}</p>
               </article>
             ))}
           </div>
           <blockquote className="quote-strip reveal delay-3">
-            “I watched it identify legitimate issues, then talk itself into deciding they weren’t a big deal and approve the work anyway.”
-            <cite>Anthropic Labs</cite>
+            "{anthropicQuote.text}"
+            <cite>{anthropicQuote.author}</cite>
           </blockquote>
         </section>
 
         <section
-          id="architecture"
-          ref={setSceneRef('architecture')}
+          id="wall-context"
+          ref={setSceneRef('wall-context')}
           className="scene"
-          data-active={activeScene === 'architecture'}
+          data-active={activeScene === 'wall-context'}
+        >
+          <SceneIntro
+            eyebrow="Failure Mode"
+            title="Wall 1 — Context degradation"
+            lede="Long-running AI coding sessions lose coherence as context grows. The agent hedges, summarizes, and prematurely wraps up. More tokens ≠ better output."
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">{wallContext.title}</span>
+              <p className="panel__body">{wallContext.body}</p>
+              <div className="signal-strip">{wallContext.signal}</div>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Why it matters</span>
+              <p className="panel__body">
+                A 200K context window does not guarantee a coherent 200K-token work session.
+                The agent's effective reasoning window is much smaller than the advertised limit.
+              </p>
+              <div className="signal-strip">Bigger window ≠ longer coherence</div>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="wall-evaluation"
+          ref={setSceneRef('wall-evaluation')}
+          className="scene"
+          data-active={activeScene === 'wall-evaluation'}
+        >
+          <SceneIntro
+            eyebrow="Failure Mode"
+            title="Wall 2 — Self-evaluation failure"
+            lede="The more dangerous wall. When the same system builds and judges, quality gets flattered. The agent names real issues, then talks itself into shipping anyway."
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">{wallEvaluation.title}</span>
+              <p className="panel__body">{wallEvaluation.body}</p>
+              <div className="signal-strip">{wallEvaluation.signal}</div>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Observed in Harnessa</span>
+              <p className="panel__body">
+                Benchmark 2 (TypeScript): the solo agent scored functionality at 8/10 despite 50% of tests failing.
+                The evaluator was too close to its own work to be honest.
+              </p>
+              <div className="signal-strip">func=8, test pass rate=50%</div>
+            </article>
+          </div>
+          <blockquote className="quote-strip reveal delay-3">
+            "{adversarialQuote.text}"
+            <cite>{adversarialQuote.author}</cite>
+          </blockquote>
+        </section>
+
+        <section
+          id="adversarial-insight"
+          ref={setSceneRef('adversarial-insight')}
+          className="scene"
+          data-active={activeScene === 'adversarial-insight'}
+        >
+          <SceneIntro
+            eyebrow="Core Idea"
+            title="What if builder and critic were different agents?"
+            lede="GANs proved that adversarial tension between a generator and discriminator creates outputs neither achieves alone. The same principle applies to code quality."
+          />
+          <div className="architecture-grid reveal delay-1">
+            <div className="topology-shell">
+              <div className="topology-flow">
+                {adversarialInsightPoints.map((point) => (
+                  <div key={point.label} className="topology-node" style={{ ['--node-accent' as string]: point.accent }}>
+                    <span className="topology-node__name">{point.label}</span>
+                    <strong>{point.description}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Act 2 — Architecture & Control Surfaces ─────────────────── */}
+
+        <section
+          id="trio-pipeline"
+          ref={setSceneRef('trio-pipeline')}
+          className="scene"
+          data-active={activeScene === 'trio-pipeline'}
         >
           <SceneIntro
             eyebrow="System View"
@@ -421,51 +553,154 @@ function App(): JSX.Element {
                 <span className="topology-link">Grade + bug report</span>
               </div>
             </div>
-            <aside className="panel telemetry-panel reveal delay-2">
-              <span className="panel__tag">Telemetry rail</span>
-              <h3>Every run produces evidence, not vibes.</h3>
-              <div className="telemetry-grid">
-                {telemetrySignals.map((signal) => (
-                  <div key={signal} className="telemetry-chip">
-                    {signal}
-                  </div>
-                ))}
-              </div>
-              <p className="telemetry-note">
-                Generator cannot see hidden `_eval/` tests. Evaluator can. That boundary is the Goodhart defense.
-              </p>
-            </aside>
           </div>
         </section>
 
         <section
-          id="critic"
-          ref={setSceneRef('critic')}
+          id="goodhart-boundary"
+          ref={setSceneRef('goodhart-boundary')}
           className="scene"
-          data-active={activeScene === 'critic'}
+          data-active={activeScene === 'goodhart-boundary'}
+        >
+          <SceneIntro
+            eyebrow="Isolation"
+            title="The Goodhart boundary"
+            lede={`"${goodhartBoundary.principle}" — If the generator can see the acceptance tests, it optimizes for them instead of building real quality.`}
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">Generator sees</span>
+              <ul className="decision-list">
+                {goodhartBoundary.generatorTree.map((item) => (
+                  <li key={item}><code>{item}</code></li>
+                ))}
+              </ul>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Evaluator sees</span>
+              <ul className="decision-list">
+                {goodhartBoundary.evaluatorTree.map((item) => (
+                  <li key={item}><code>{item}</code></li>
+                ))}
+              </ul>
+            </article>
+          </div>
+          <div className="aggregate-strip reveal delay-3">
+            <div>
+              <span className="chrome-pill">Mechanism</span>
+              <strong>{goodhartBoundary.mechanism}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="sprint-contracts"
+          ref={setSceneRef('sprint-contracts')}
+          className="scene"
+          data-active={activeScene === 'sprint-contracts'}
+        >
+          <SceneIntro
+            eyebrow="Contracts"
+            title="Spec-driven sprint agreements"
+            lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
+          />
+          <div className="scorecard-list">
+            {sprintContracts.flow.map((item, index) => (
+              <article key={item.step} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{item.step}</span>
+                    <h3>{item.action}</h3>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="aggregate-strip reveal delay-3">
+            <p>{sprintContracts.keyInsight}</p>
+          </div>
+        </section>
+
+        <section
+          id="files-on-disk"
+          ref={setSceneRef('files-on-disk')}
+          className="scene"
+          data-active={activeScene === 'files-on-disk'}
+        >
+          <SceneIntro
+            eyebrow="Communication"
+            title="Files on disk, not chat history"
+            lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">Handoff artifacts</span>
+              <ul className="decision-list">
+                {filesOnDisk.artifacts.map((a) => (
+                  <li key={a.name}><code>{a.name}</code> — {a.role}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Why files?</span>
+              <ul className="decision-list">
+                {filesOnDisk.benefits.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="telemetry-layer"
+          ref={setSceneRef('telemetry-layer')}
+          className="scene"
+          data-active={activeScene === 'telemetry-layer'}
+        >
+          <SceneIntro
+            eyebrow="Instrumentation"
+            title="Every run produces structured evidence"
+            lede={telemetryDetail.description}
+          />
+          <aside className="panel telemetry-panel reveal delay-1">
+            <span className="panel__tag">Telemetry rail</span>
+            <h3>{telemetryDetail.keyInsight}</h3>
+            <div className="telemetry-grid">
+              {telemetrySignals.map((signal) => (
+                <div key={signal} className="telemetry-chip">
+                  {signal}
+                </div>
+              ))}
+            </div>
+            <p className="telemetry-note">
+              Generator cannot see hidden `_eval/` tests. Evaluator can. That boundary is the Goodhart defense.
+            </p>
+          </aside>
+        </section>
+
+        {/* ── Act 3 — Critic Calibration & Experimental Setup ──────────── */}
+
+        <section
+          id="karpathy-problem"
+          ref={setSceneRef('karpathy-problem')}
+          className="scene"
+          data-active={activeScene === 'karpathy-problem'}
         >
           <SceneIntro
             eyebrow="Skepticism Engine"
-            title="The critic needs hard rules"
-            lede="Karpathy’s anecdote is the point: an LLM can argue both sides convincingly. A separate evaluator only works if it is calibrated to refuse empty praise."
+            title="The Karpathy problem"
+            lede={karpathyQuote.insight}
           />
           <div className="critic-grid">
             <article className="panel quote-panel reveal delay-1">
               <span className="panel__tag">Karpathy problem</span>
               <p className="quote-panel__text">
-                “Used an LLM to improve my argument over 4 hours. Feeling great, so convincing! Fun idea — let’s ask it to argue the opposite. LLM demolishes the entire argument. lol”
+                "{karpathyQuote.text}"
               </p>
-              <cite>Andrej Karpathy</cite>
+              <cite>{karpathyQuote.author}</cite>
             </article>
-            <article className="panel rules-panel reveal delay-2">
-              <span className="panel__tag">Anti-sycophancy rules</span>
-              <ul>
-                {criticRules.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel verdict-panel reveal delay-3">
+            <article className="panel verdict-panel reveal delay-2">
               <span className="panel__tag">Evaluator posture</span>
               <div className="verdict-code">
                 <pre>{`{ "functionality": 1, "verdict": "FAIL" }`}</pre>
@@ -479,10 +714,131 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="evidence"
-          ref={setSceneRef('evidence')}
+          id="anti-sycophancy"
+          ref={setSceneRef('anti-sycophancy')}
           className="scene"
-          data-active={activeScene === 'evidence'}
+          data-active={activeScene === 'anti-sycophancy'}
+        >
+          <SceneIntro
+            eyebrow="Hard Rules"
+            title="Anti-people-pleasing guardrails"
+            lede="Skepticism by prompt is not enough. Hard rules prevent the evaluator from rubber-stamping mediocre work, even when the LLM's instinct is to be agreeable."
+          />
+          <div className="critic-grid">
+            <article className="panel rules-panel reveal delay-1">
+              <span className="panel__tag">Anti-sycophancy rules</span>
+              <ul>
+                {criticRules.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Why hard rules?</span>
+              <p className="panel__body">
+                Without explicit thresholds, evaluators trend toward 7/10 on everything.
+                Hard ceilings force honest scores even when the LLM wants to be polite.
+              </p>
+              <div className="signal-strip">All scores ≥ 7 = rubber-stamp suspicion</div>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="criteria-thresholds"
+          ref={setSceneRef('criteria-thresholds')}
+          className="scene"
+          data-active={activeScene === 'criteria-thresholds'}
+        >
+          <SceneIntro
+            eyebrow="Grading"
+            title="Criteria and pass thresholds"
+            lede="Four dimensions, weighted by importance. HIGH-weight criteria need a 6 to pass. The evaluator grades each independently — no single-number summary."
+          />
+          <div className="scorecard-list">
+            {criteriaThresholds.map((row, index) => (
+              <article key={row.criterion} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{row.weight}</span>
+                    <h3>{row.criterion}</h3>
+                  </div>
+                  <div className="score-row__winner">≥ {row.threshold}</div>
+                </div>
+                <p>{row.meaning}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="experiment-design"
+          ref={setSceneRef('experiment-design')}
+          className="scene"
+          data-active={activeScene === 'experiment-design'}
+        >
+          <SceneIntro
+            eyebrow="Controls"
+            title="Solo vs trio — same model, different architecture"
+            lede={`The independent variable is architecture. Everything else is controlled: ${experimentDesign.controls.map((c) => c.variable.toLowerCase()).join(', ')}.`}
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">Controlled variables</span>
+              <ul className="decision-list">
+                {experimentDesign.controls.map((c) => (
+                  <li key={c.variable}><strong>{c.variable}:</strong> {c.value}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">Measured outcomes</span>
+              <ul className="decision-list">
+                {experimentDesign.dependentVariables.map((v) => (
+                  <li key={v}>{v}</li>
+                ))}
+              </ul>
+            </article>
+          </div>
+          <div className="aggregate-strip reveal delay-3">
+            <p><strong>Independent variable:</strong> {experimentDesign.independentVariable}</p>
+          </div>
+        </section>
+
+        <section
+          id="benchmark-matrix"
+          ref={setSceneRef('benchmark-matrix')}
+          className="scene"
+          data-active={activeScene === 'benchmark-matrix'}
+        >
+          <SceneIntro
+            eyebrow="Test Suite"
+            title="Five benchmarks across three languages"
+            lede="Each benchmark has real code with a seeded bug or missing feature, visible tests (some failing), and hidden acceptance tests the generator cannot see."
+          />
+          <div className="scorecard-list">
+            {benchmarkMatrix.map((row, index) => (
+              <article key={row.id} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{row.size} · {row.type}</span>
+                    <h3>{row.description}</h3>
+                  </div>
+                  <div className="score-row__winner">{row.language}</div>
+                </div>
+                <p><code>{row.id}</code></p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Act 4 — Results ─────────────────────────────────────────── */}
+
+        <section
+          id="headline-result"
+          ref={setSceneRef('headline-result')}
+          className="scene"
+          data-active={activeScene === 'headline-result'}
         >
           <SceneIntro
             eyebrow="Headline Result"
@@ -520,15 +876,15 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="scorecard"
-          ref={setSceneRef('scorecard')}
+          id="full-scorecard"
+          ref={setSceneRef('full-scorecard')}
           className="scene"
-          data-active={activeScene === 'scorecard'}
+          data-active={activeScene === 'full-scorecard'}
         >
           <SceneIntro
             eyebrow="Benchmark Grid"
             title="Trio wins where complexity starts to bite"
-            lede="The scorecard matters because it stops the story from becoming propaganda: trio is not always worth it, but it clearly helps when the task crosses the model’s solo reliability threshold."
+            lede="The scorecard matters because it stops the story from becoming propaganda: trio is not always worth it, but it clearly helps when the task crosses the model's solo reliability threshold."
           />
           <div className="scorecard-list">
             {scorecardRows.map((row, index) => (
@@ -562,10 +918,36 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="feedback"
-          ref={setSceneRef('feedback')}
+          id="difficulty-classification"
+          ref={setSceneRef('difficulty-classification')}
           className="scene"
-          data-active={activeScene === 'feedback'}
+          data-active={activeScene === 'difficulty-classification'}
+        >
+          <SceneIntro
+            eyebrow="Difficulty Zones"
+            title="Too easy, in the zone, too hard"
+            lede="The trio is not universally better. Its value depends on where the task sits relative to the model's solo capability ceiling."
+          />
+          <div className="scorecard-list">
+            {difficultyZones.map((zone, index) => (
+              <article key={zone.zone} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag" style={{ borderColor: zone.color }}>{zone.zone}</span>
+                    <h3>{zone.description}</h3>
+                  </div>
+                </div>
+                <p>{zone.example}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="iteration-curve"
+          ref={setSceneRef('iteration-curve')}
+          className="scene"
+          data-active={activeScene === 'iteration-curve'}
         >
           <SceneIntro
             eyebrow="Iteration Curve"
@@ -575,7 +957,7 @@ function App(): JSX.Element {
           <div className="feedback-grid reveal delay-1">
             <div className="panel chart-panel">
               <span className="panel__tag">Average score by iteration</span>
-              <IterationChart active={activeScene === 'feedback'} />
+              <IterationChart active={activeScene === 'iteration-curve'} />
             </div>
             <div className="panel feedback-notes">
               <span className="panel__tag">What the chart says</span>
@@ -589,14 +971,105 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="landscape"
-          ref={setSceneRef('landscape')}
+          id="claims-confirmed"
+          ref={setSceneRef('claims-confirmed')}
           className="scene"
-          data-active={activeScene === 'landscape'}
+          data-active={activeScene === 'claims-confirmed'}
+        >
+          <SceneIntro
+            eyebrow="Validated"
+            title="Five confirmed claims from the article"
+            lede="These Anthropic article claims held up under controlled testing. The evidence is directional (N=11) but consistent."
+          />
+          <div className="scorecard-list">
+            {claimsConfirmed.map((item, index) => (
+              <article key={item.claim} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">✅ Confirmed</span>
+                    <h3>{item.claim}</h3>
+                  </div>
+                </div>
+                <p>{item.evidence}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Act 5 — Nuance, Caveats, and Industry Context ───────────── */}
+
+        <section
+          id="claims-partial"
+          ref={setSceneRef('claims-partial')}
+          className="scene"
+          data-active={activeScene === 'claims-partial'}
+        >
+          <SceneIntro
+            eyebrow="Nuance"
+            title="Partial and inconclusive claims"
+            lede="Not every article claim survived testing. Honest reporting means showing where the evidence is thin or mixed."
+          />
+          <div className="two-up-grid">
+            <article className="panel reveal delay-1">
+              <span className="panel__tag">⚠️ Partial</span>
+              <ul className="decision-list">
+                {claimsPartial.map((item) => (
+                  <li key={item.claim}>
+                    <strong>{item.claim}</strong>
+                    <br />{item.evidence}
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article className="panel reveal delay-2">
+              <span className="panel__tag">❓ Inconclusive</span>
+              <ul className="decision-list decision-list--muted">
+                {claimsInconclusive.map((item) => (
+                  <li key={item.claim}>
+                    <strong>{item.claim}</strong>
+                    <br />{item.evidence}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="evaluator-leniency"
+          ref={setSceneRef('evaluator-leniency')}
+          className="scene"
+          data-active={activeScene === 'evaluator-leniency'}
+        >
+          <SceneIntro
+            eyebrow="Measurement Gap"
+            title="The evaluator is not perfect"
+            lede="Even with hard rules and anti-sycophancy prompting, the evaluator still shows leniency. This is an unsolved problem, not an oversight."
+          />
+          <div className="scorecard-list">
+            {evaluatorLeniencyObservations.map((obs, index) => (
+              <article key={obs.observation} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{obs.severity}</span>
+                    <h3>{obs.observation}</h3>
+                  </div>
+                </div>
+                <p>{obs.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="industry-timeline"
+          ref={setSceneRef('industry-timeline')}
+          className="scene"
+          data-active={activeScene === 'industry-timeline'}
         >
           <SceneIntro
             eyebrow="Industry Convergence"
-            title="This is not one lab’s quirky workflow"
+            title="This is not one lab's quirky workflow"
             lede="Anthropic, Claude Code, OpenAI Symphony, and community toolchains keep rediscovering the same foundations: isolated workspaces, specialized roles, and evaluation as architecture."
           />
           <div className="panel timeline-panel reveal delay-1">
@@ -617,14 +1090,115 @@ function App(): JSX.Element {
         </section>
 
         <section
-          id="decision"
-          ref={setSceneRef('decision')}
+          id="ecosystem-network"
+          ref={setSceneRef('ecosystem-network')}
           className="scene"
-          data-active={activeScene === 'decision'}
+          data-active={activeScene === 'ecosystem-network'}
+        >
+          <SceneIntro
+            eyebrow="Ecosystem"
+            title="Outside voices confirm the direction"
+            lede="Independent teams and projects keep arriving at the same architectural patterns — isolated agents, structured evaluation, and adversarial feedback loops."
+          />
+          <div className="scorecard-list">
+            {ecosystemNodes.map((node, index) => (
+              <article key={node.name} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{node.name}</span>
+                    <h3>{node.insight}</h3>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="showcase-rebuild"
+          ref={setSceneRef('showcase-rebuild')}
+          className="scene"
+          data-active={activeScene === 'showcase-rebuild'}
+        >
+          <SceneIntro
+            eyebrow="Case Study"
+            title="Monolith to proper app in two iterations"
+            lede="The showcase rebuild is the trio pattern in action: iteration 1 shipped a 1-file monolith. The evaluator rejected it. Iteration 2 produced a 32-file full-stack application."
+          />
+          <div className="headline-grid">
+            <article className="state-card state-card--solo reveal delay-1">
+              <span className="panel__tag">Iteration 1</span>
+              <strong>{showcaseComparison.iteration1.verdict}</strong>
+              <p>{showcaseComparison.iteration1.files} file · {showcaseComparison.iteration1.lines} lines · {showcaseComparison.iteration1.tests} tests</p>
+              <small>{showcaseComparison.iteration1.note}</small>
+            </article>
+            <div className="state-transition reveal delay-2">
+              <span className="chrome-pill chrome-pill--active">Evaluator feedback</span>
+              <div className="transition-arrow">FAIL → PASS</div>
+              <small>{showcaseComparison.iteration2.lines} lines changed</small>
+            </div>
+            <article className="state-card state-card--trio reveal delay-3">
+              <span className="panel__tag">Iteration 2</span>
+              <strong>{showcaseComparison.iteration2.verdict}</strong>
+              <p>{showcaseComparison.iteration2.files} files · {showcaseComparison.iteration2.components} components · {showcaseComparison.iteration2.tests} tests</p>
+              <small>{showcaseComparison.iteration2.note}</small>
+            </article>
+          </div>
+          <div className="panel reveal delay-4">
+            <span className="panel__tag">Key lessons</span>
+            <ul className="decision-list">
+              {showcaseKeyLessons.map((lesson) => (
+                <li key={lesson}>{lesson}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── Act 6 — Practical Use, Demo, and Forward View ──────────── */}
+
+        <section
+          id="demo-flow"
+          ref={setSceneRef('demo-flow')}
+          className="scene"
+          data-active={activeScene === 'demo-flow'}
+        >
+          <SceneIntro
+            eyebrow="Live Demo"
+            title="One command, three agents"
+            lede="The /harnessa skill runs the full trio pipeline inside any Copilot CLI session. No API keys, no setup — just the command."
+          />
+          <div className="panel reveal delay-1">
+            <span className="panel__tag">Command</span>
+            <div className="verdict-code">
+              <pre>{demoFlow.command}</pre>
+            </div>
+          </div>
+          <div className="scorecard-list">
+            {demoFlow.phases.map((phase, index) => (
+              <article key={phase.name} className="score-row reveal" style={{ transitionDelay: `${(index + 1) * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{phase.name}</span>
+                    <h3>{phase.description}</h3>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="aggregate-strip reveal delay-4">
+            <p>{demoFlow.note}</p>
+          </div>
+        </section>
+
+        <section
+          id="decision-tree"
+          ref={setSceneRef('decision-tree')}
+          className="scene"
+          data-active={activeScene === 'decision-tree'}
         >
           <SceneIntro
             eyebrow="Operating Model"
-            title="Use it where it changes the answer"
+            title="When trio is worth the overhead"
             lede="The trio is not a religion. It is an operating pattern for tasks where solo output is likely to be wrong, incomplete, or self-flatteringly over-scored."
           />
           <div className="decision-grid">
@@ -644,21 +1218,65 @@ function App(): JSX.Element {
                 ))}
               </ul>
             </article>
-            <article className="panel reveal delay-3">
-              <span className="panel__tag">Models can punch above their weight</span>
-              <div className="tiering-stack">
-                {tieringRoles.map((role) => (
-                  <div key={role.model} className="tiering-card">
-                    <strong>{role.model}</strong>
-                    <span>{role.role}</span>
-                    <p>{role.note}</p>
+          </div>
+        </section>
+
+        <section
+          id="model-tiering"
+          ref={setSceneRef('model-tiering')}
+          className="scene"
+          data-active={activeScene === 'model-tiering'}
+        >
+          <SceneIntro
+            eyebrow="Model Strategy"
+            title="Opus plans, Sonnet builds"
+            lede="Not every agent needs the most expensive model. Match model capability to role: reasoning-heavy roles get the premium model, execution roles get the fast one."
+          />
+          <article className="panel reveal delay-1">
+            <span className="panel__tag">Models can punch above their weight</span>
+            <div className="tiering-stack">
+              {tieringRoles.map((role) => (
+                <div key={role.model} className="tiering-card">
+                  <strong>{role.model}</strong>
+                  <span>{role.role}</span>
+                  <p>{role.note}</p>
+                </div>
+              ))}
+            </div>
+            <p className="decision-footnote">
+              Industry practice, not directly tested here: Anthropic's `/opusplan` pattern keeps the premium reasoning model in planning mode and lets faster models do the execution work.
+            </p>
+          </article>
+        </section>
+
+        <section
+          id="round-robin"
+          ref={setSceneRef('round-robin')}
+          className="scene"
+          data-active={activeScene === 'round-robin'}
+        >
+          <SceneIntro
+            eyebrow="Conjecture"
+            title="Cross-model evaluation and role rotation"
+            lede="What happens when different models evaluate each other's work? The theory: disagreements between models surface blind spots that same-model evaluation misses."
+          />
+          <div className="scorecard-list">
+            {roundRobinConcepts.map((item, index) => (
+              <article key={item.concept} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{item.concept}</span>
+                    <h3>{item.description}</h3>
                   </div>
-                ))}
-              </div>
-              <p className="decision-footnote">
-                Industry practice, not directly tested here: Anthropic’s `/opusplan` pattern keeps the premium reasoning model in planning mode and lets faster models do the execution work.
-              </p>
-            </article>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="aggregate-strip reveal delay-3">
+            <div>
+              <span className="chrome-pill">Caveat</span>
+              <strong>{roundRobinCaveat}</strong>
+            </div>
           </div>
         </section>
 
@@ -675,9 +1293,13 @@ function App(): JSX.Element {
                 The quality ceiling is real. Architecture breaks through it.
               </h2>
               <p className="scene__lede reveal delay-2">
-                When a solo agent ships broken code, the answer is not always “buy a bigger model.”
-                Sometimes the answer is “stop letting the builder grade itself.”
+                When a solo agent ships broken code, the answer is not always "buy a bigger model."
+                Sometimes the answer is "stop letting the builder grade itself."
               </p>
+              <blockquote className="quote-strip reveal delay-3">
+                "{closingQuote.text}"
+                <cite>{closingQuote.author}</cite>
+              </blockquote>
               <div className="closing-actions reveal delay-3">
                 <a className="chrome-button chrome-button--primary" href="https://github.com/ridermw/harnessa" target="_blank" rel="noreferrer">
                   View the repo
@@ -705,6 +1327,10 @@ function App(): JSX.Element {
     </div>
   );
 }
+
+/* ────────────────────────────────────────────────────────────────────
+   Sub-components
+   ──────────────────────────────────────────────────────────────────── */
 
 function SceneIntro({
   eyebrow,
@@ -786,7 +1412,7 @@ function IterationChart({ active }: { active: boolean }): JSX.Element {
   const dashStyle = active ? undefined : { strokeDashoffset: 100 };
 
   return (
-    <svg viewBox="0 0 100 100" className="iteration-chart" role="img" aria-label="Average score by iteration across trio runs">
+    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="iteration-chart" role="img" aria-label="Average score by iteration across trio runs">
       <line x1="8" y1="22" x2="98" y2="22" className="iteration-chart__threshold" />
       <text x="8" y="18" className="iteration-chart__label">PASS</text>
       {[0, 1, 2].map((index) => {

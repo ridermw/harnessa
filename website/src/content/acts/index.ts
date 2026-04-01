@@ -1,11 +1,13 @@
 export {
   heroMetrics,
   anthropicSparkComparison,
+  articleVsHarnessa,
   anthropicQuote,
   wallContext,
   wallEvaluation,
   problemWalls,
   adversarialInsightPoints,
+  ganAnalogy,
   adversarialQuote,
 } from './act1-thesis';
 
@@ -40,6 +42,7 @@ export {
   claimsPartial,
   claimsInconclusive,
   evaluatorLeniencyObservations,
+  measurementCaveats,
   landscapeEvents,
   ecosystemNodes,
   showcaseComparison,

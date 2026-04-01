@@ -2,26 +2,30 @@
 
 export const claimsPartial = [
   {
-    claim: 'Harness output categorically different',
-    evidence: 'Only complex tasks (bench 5). Small tasks show marginal or no gains.',
+    claim: 'Harness output is categorically different from solo',
+    articleRef: 'Claim B3',
+    evidence: 'Confirmed for bench 5 (fullstack: solo broken, trio working). But small benchmarks showed marginal or no difference. The "categorical" claim applies only to tasks beyond solo capability.',
     status: 'partial' as const,
   },
   {
-    claim: 'Planner expands scope',
-    evidence: 'Primary value is structure/roadmap, not scope expansion.',
+    claim: 'Planner expands scope beyond what solo attempts',
+    articleRef: 'Claims A3/D2',
+    evidence: 'Planner produced specs in 40–84s providing structural guidance. Primary value was roadmap, not scope expansion — both modes received the same task. Article\'s 16-feature expansion not directly testable.',
     status: 'partial' as const,
   },
 ] as const;
 
 export const claimsInconclusive = [
   {
-    claim: '20× cost multiplier',
-    evidence: 'Cannot validate — Copilot CLI does not expose token cost data, only duration.',
+    claim: 'Criteria wording steers generator output',
+    articleRef: 'Claim C3',
+    evidence: 'Would require ablation study (run with vs. without criteria, or with different wording). Not tested — all benchmarks used the same criteria files without variation.',
     status: 'inconclusive' as const,
   },
   {
-    claim: 'Cross-model evaluation improves reliability',
-    evidence: 'Not tested — all runs used same model (claude-sonnet-4).',
+    claim: 'Harness assumptions go stale as models improve',
+    articleRef: 'Claim E1',
+    evidence: 'Single model tested (claude-sonnet-4). Would need multi-model comparison across generations to validate. Planner showed minimal value on small tasks, hinting at staleness.',
     status: 'inconclusive' as const,
   },
 ] as const;
@@ -31,23 +35,42 @@ export const claimsInconclusive = [
 export const evaluatorLeniencyObservations = [
   {
     observation: 'People-pleasing bias',
-    detail: 'Bench 2 evaluator gave func=8 despite 50% test failures',
+    detail: 'Bench 2: evaluator gave func=8 despite 50% test failures (11/22 passing). Identified issues but scored leniently — exactly the pattern the article warns about.',
+    severity: 'high' as const,
+  },
+  {
+    observation: 'Python tags evaluator leniency',
+    detail: 'Bench 4: solo evaluator gave avg 8.5, but trio iter 1 avg was 3.25 for comparable output. Solo score is numerically higher but likely flatteringly so.',
     severity: 'high' as const,
   },
   {
     observation: 'Unparseable output',
-    detail: 'First trio run: evaluator returned verbose prose instead of JSON',
+    detail: 'First trio run (bd67944a): evaluator returned verbose prose instead of JSON. Generator actually fixed the bug (14/14 tests pass) but grading failed entirely.',
     severity: 'medium' as const,
   },
   {
     observation: 'False positive rate unmeasured',
-    detail: 'No human baseline to compare against — requires manual review',
+    detail: 'No human baseline to compare evaluator bug reports against. Requires manual spot-check review — deferred.',
     severity: 'medium' as const,
   },
+] as const;
+
+export const measurementCaveats = [
   {
-    observation: 'Prompt hardening required',
-    detail: 'Added "ENTIRE response must be a single JSON object" after first failure',
-    severity: 'low' as const,
+    caveat: 'N=11 total runs',
+    detail: '5 benchmarks × ~2 runs per mode. Directional signal only, not statistically significant. Target was 3+ runs per benchmark per mode for variance measurement.',
+  },
+  {
+    caveat: 'Duration as cost proxy',
+    detail: 'Copilot CLI does not expose token counts or costs. Wall-clock duration (~1.8× trio/solo) is the only cost proxy available. Cannot validate article\'s 20× cost claim.',
+  },
+  {
+    caveat: 'Cross-model evaluation not validated',
+    detail: 'All runs used claude-sonnet-4 for all agents. Cross-model evaluation is an architectural feature of Harnessa but was not exercised — Copilot CLI does not support per-agent model assignment.',
+  },
+  {
+    caveat: 'Same evaluator for both modes',
+    detail: 'The same model graded both solo and trio output. No blind evaluation. Evaluator inconsistency is an open risk.',
   },
 ] as const;
 
@@ -117,7 +140,7 @@ export const showcaseComparison = {
     components: 0,
     tests: 0,
     verdict: 'FAIL' as const,
-    note: 'CDN React + Babel string template, no real components',
+    note: 'CDN React + Babel string template — server, client, DB, and WebSocket all in one file. No real JSX components.',
   },
   iteration2: {
     files: 32,
@@ -126,14 +149,15 @@ export const showcaseComparison = {
     components: 6,
     tests: 7,
     verdict: 'PASS' as const,
-    note: 'React 18 + Vite + Tailwind, 4 routes, WebSocket hook',
+    note: 'React 18 + Vite + Tailwind, 4 routes, WebSocket hook, 7 real heuristics in trio analysis service',
   },
 } as const;
 
 export const showcaseKeyLessons = [
-  'A solo agent would have shipped iteration 1 — it "worked" but the architecture was unacceptable',
-  'Evaluator forced the quality level solo would never reach',
-  'Same 520-line spec drove both attempts — separation of WHAT vs HOW',
+  'A solo agent would have shipped iteration 1 — it "worked" but the architecture was unacceptable for a showcase',
+  'The evaluator forced a complete rebuild: 1 file → 32 files, string template → real JSX, 0 tests → 7 tests',
+  'Same 520-line planner spec drove both attempts — separation of WHAT (spec) vs HOW (implementation)',
+  'Planner expanded a 12-line prompt into 12 user stories, 18 API endpoints, and 19 UI component specs',
 ] as const;
 
 /* ── Appendix data ─────────────────────────────────────────────────── */

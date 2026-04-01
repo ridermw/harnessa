@@ -3,11 +3,15 @@
 export const demoFlow = {
   command: "copilot -p '/harnessa Fix the authentication bug' --allow-all",
   phases: [
-    { name: 'Planner', description: 'Reads TASK.md, produces structured spec with acceptance criteria' },
-    { name: 'Generator', description: 'Implements the spec in bounded sprints, writes code to disk' },
-    { name: 'Evaluator', description: 'Runs tests, grades output, provides structured feedback or PASS verdict' },
+    { name: 'Planner', artifact: 'harnessa-spec.md', description: 'Reads task, surveys codebase, produces structured spec with acceptance criteria' },
+    { name: 'Generator', artifact: 'harnessa-gen-report.md', description: 'Implements spec in bounded sprints, writes code, runs tests, commits changes' },
+    { name: 'Evaluator', artifact: 'harnessa-eval.md', description: 'Reads diff + report (NOT the spec), grades against criteria, provides structured feedback or PASS verdict' },
   ],
   note: 'Runs inside any Copilot CLI session. No API keys needed — uses your Copilot subscription.',
+  paths: {
+    skill: { label: 'Copilot skill (/harnessa)', detail: 'Single session, simulated isolation via context resets between phases. Quick, low-overhead — for everyday use.' },
+    harness: { label: 'Full harness (harnessa CLI)', detail: 'Real subprocess isolation, separate processes per agent. Structured telemetry, cross-model evaluation support — for benchmarking and research.' },
+  },
 } as const;
 
 /* ── Scene 27: decision-tree ───────────────────────────────────────── */
@@ -59,7 +63,7 @@ export const roundRobinConcepts = [
 ] as const;
 
 export const roundRobinCaveat =
-  'Industry practice and conjecture — not directly validated by Harnessa experiments.' as const;
+  'Industry context, not Harnessa evidence. These concepts are conjecture and industry practice — not directly validated by our experiments. All Harnessa runs used a single model (claude-sonnet-4).' as const;
 
 /* ── Scene 30: closing ─────────────────────────────────────────────── */
 

@@ -780,7 +780,7 @@ function App(): JSX.Element {
                   </div>
                   <div className="score-row__winner">{row.language}</div>
                 </div>
-                <p><code>{row.id}</code></p>
+                <p><code>{row.id}</code> · {row.loc} · {row.duration}</p>
               </article>
             ))}
           </div>
@@ -877,7 +877,12 @@ function App(): JSX.Element {
                     <h3>{zone.description}</h3>
                   </div>
                 </div>
-                <p>{zone.example}</p>
+                <p><strong>{zone.example}</strong></p>
+                <ul style={{ margin: '0.5em 0 0 1.2em', opacity: 0.8, fontSize: '0.85em' }}>
+                  {zone.benchmarks.map((b) => (
+                    <li key={b}>{b}</li>
+                  ))}
+                </ul>
               </article>
             ))}
           </div>
@@ -926,7 +931,7 @@ function App(): JSX.Element {
               <article key={item.claim} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
                 <div className="score-row__header">
                   <div>
-                    <span className="panel__tag">✅ Confirmed</span>
+                    <span className="panel__tag">✅ {item.articleRef}</span>
                     <h3>{item.claim}</h3>
                   </div>
                 </div>
@@ -951,11 +956,11 @@ function App(): JSX.Element {
           />
           <div className="two-up-grid">
             <article className="panel reveal delay-1">
-              <span className="panel__tag">⚠️ Partial</span>
+              <span className="panel__tag">⚠️ Partially confirmed</span>
               <ul className="decision-list">
                 {claimsPartial.map((item) => (
                   <li key={item.claim}>
-                    <strong>{item.claim}</strong>
+                    <strong>{item.claim}</strong> <em>({item.articleRef})</em>
                     <br />{item.evidence}
                   </li>
                 ))}
@@ -966,7 +971,7 @@ function App(): JSX.Element {
               <ul className="decision-list decision-list--muted">
                 {claimsInconclusive.map((item) => (
                   <li key={item.claim}>
-                    <strong>{item.claim}</strong>
+                    <strong>{item.claim}</strong> <em>({item.articleRef})</em>
                     <br />{item.evidence}
                   </li>
                 ))}
@@ -998,6 +1003,16 @@ function App(): JSX.Element {
                 <p>{obs.detail}</p>
               </article>
             ))}
+          </div>
+          <div className="panel reveal delay-4" style={{ marginTop: 'var(--space-4)' }}>
+            <span className="panel__tag">Measurement caveats</span>
+            <ul className="decision-list">
+              {measurementCaveats.map((c) => (
+                <li key={c.caveat}>
+                  <strong>{c.caveat}:</strong> {c.detail}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -1047,6 +1062,18 @@ function App(): JSX.Element {
           <div className="reveal delay-1">
             <DiagramRenderer spec={diagram11ShowcaseRebuild} />
           </div>
+          <div className="headline-grid" style={{ marginTop: 'var(--space-4)' }}>
+            <article className="state-card state-card--solo reveal delay-2">
+              <span className="panel__tag">Iteration 1 — {showcaseComparison.iteration1.verdict}</span>
+              <strong>{showcaseComparison.iteration1.files} file · {showcaseComparison.iteration1.lines} lines · {showcaseComparison.iteration1.tests} tests</strong>
+              <p>{showcaseComparison.iteration1.note}</p>
+            </article>
+            <article className="state-card state-card--trio reveal delay-3">
+              <span className="panel__tag">Iteration 2 — {showcaseComparison.iteration2.verdict}</span>
+              <strong>{showcaseComparison.iteration2.files} files · {showcaseComparison.iteration2.components} components · {showcaseComparison.iteration2.tests} tests</strong>
+              <p>{showcaseComparison.iteration2.note}</p>
+            </article>
+          </div>
           <div className="panel reveal delay-4">
             <span className="panel__tag">Key lessons</span>
             <ul className="decision-list">
@@ -1073,7 +1100,36 @@ function App(): JSX.Element {
           <div className="reveal delay-1">
             <DiagramRenderer spec={diagram12DemoFlow} />
           </div>
-          <div className="aggregate-strip reveal delay-4">
+          <div className="panel reveal delay-2" style={{ marginTop: 'var(--space-4)' }}>
+            <span className="panel__tag">Command</span>
+            <div className="verdict-code">
+              <pre>{demoFlow.command}</pre>
+            </div>
+          </div>
+          <div className="scorecard-list" style={{ marginTop: 'var(--space-3)' }}>
+            {demoFlow.phases.map((phase, index) => (
+              <article key={phase.name} className="score-row reveal" style={{ transitionDelay: `${(index + 2) * 80}ms` } as CSSProperties}>
+                <div className="score-row__header">
+                  <div>
+                    <span className="panel__tag">{phase.name}</span>
+                    <h3>{phase.description}</h3>
+                  </div>
+                  <div className="score-row__winner"><code>{phase.artifact}</code></div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="two-up-grid" style={{ marginTop: 'var(--space-4)' }}>
+            <article className="panel reveal delay-5">
+              <span className="panel__tag">{demoFlow.paths.skill.label}</span>
+              <p className="panel__body">{demoFlow.paths.skill.detail}</p>
+            </article>
+            <article className="panel reveal delay-6">
+              <span className="panel__tag">{demoFlow.paths.harness.label}</span>
+              <p className="panel__body">{demoFlow.paths.harness.detail}</p>
+            </article>
+          </div>
+          <div className="aggregate-strip reveal delay-7">
             <p>{demoFlow.note}</p>
           </div>
         </section>
@@ -1126,7 +1182,7 @@ function App(): JSX.Element {
           </div>
           <div className="aggregate-strip reveal delay-3">
             <div>
-              <span className="chrome-pill">Caveat</span>
+              <span className="chrome-pill">⚠️ Industry context, not Harnessa evidence</span>
               <strong>{roundRobinCaveat}</strong>
             </div>
           </div>

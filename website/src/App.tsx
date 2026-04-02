@@ -361,15 +361,15 @@ function App(): JSX.Element {
         >
           <div className="scene__content hero-layout">
             <div className="hero-copy">
-              <span className="scene__eyebrow reveal">Anthropic article → Harnessa evidence → deployment pattern</span>
-              <h1 className="scene__title reveal delay-1">
+              <span className="scene__eyebrow reveal stagger-1">Anthropic article → Harnessa evidence → deployment pattern</span>
+              <h1 className="scene__title reveal stagger-2">
                 Better AI software comes from agents that disagree.
               </h1>
-              <p className="scene__lede reveal delay-2">
+              <p className="scene__lede reveal stagger-3">
                 Anthropic framed the idea. Harnessa tested it. The result was not marginal polish —
                 it was a broken solo full-stack build turning into a working trio system.
               </p>
-              <div className="hero-actions reveal delay-3">
+              <div className="hero-actions reveal stagger-4">
                 <button className="chrome-button chrome-button--primary" onClick={() => jumpToScene('headline-result')} type="button">
                   Jump to the headline
                 </button>
@@ -377,12 +377,12 @@ function App(): JSX.Element {
                   Open appendix
                 </button>
               </div>
-              <div className="hero-note reveal delay-4">
+              <div className="hero-note reveal stagger-5">
                 <span className="chrome-pill">Caveat</span>
                 N=11 total runs. Directional, not final science — but the full-stack result is categorical, not subtle.
               </div>
             </div>
-            <div className="hero-visual reveal delay-2">
+            <div className="hero-visual reveal-scale stagger-3">
               <HeroSignal />
               <div className="hero-metrics">
                 {heroMetrics.map((metric) => (
@@ -560,7 +560,7 @@ function App(): JSX.Element {
               title="Planner → Generator ↔ Evaluator"
               lede="The architecture matters more than one bigger context window. Separate roles, explicit contracts, and independent evaluation create the quality leverage."
             />
-            <div className="scene__diagram reveal delay-1">
+            <div className="scene__diagram reveal-scale stagger-4">
               <DiagramRenderer spec={diagram01TrioPipeline} />
             </div>
           </div>
@@ -593,7 +593,7 @@ function App(): JSX.Element {
                 </div>
               </div>
             </div>
-            <div className="scene__diagram reveal delay-1">
+            <div className="scene__diagram reveal-scale stagger-4">
               <DiagramRenderer spec={diagram02GoodhartBoundary} />
               <div className="two-up-grid" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
                 <article className="panel">
@@ -631,7 +631,7 @@ function App(): JSX.Element {
                 <p>{sprintContracts.keyInsight}</p>
               </div>
             </div>
-            <div className="scene__diagram reveal delay-1">
+            <div className="scene__diagram reveal-scale stagger-4">
               <DiagramRenderer spec={diagram03SprintContract} />
             </div>
           </div>
@@ -650,7 +650,7 @@ function App(): JSX.Element {
               title="Files on disk, not chat history"
               lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
             />
-            <div className="scene__diagram reveal delay-1">
+            <div className="scene__diagram reveal-scale stagger-4">
               <DiagramRenderer spec={diagram04FilesHandoff} />
             </div>
           </div>
@@ -669,7 +669,7 @@ function App(): JSX.Element {
               title="Every run produces structured evidence"
               lede={telemetryDetail.description}
             />
-            <div className="scene__diagram reveal delay-1">
+            <div className="scene__diagram reveal-scale stagger-4">
               <DiagramRenderer spec={diagram05TelemetryStack} />
             </div>
           </div>
@@ -1356,19 +1356,19 @@ function App(): JSX.Element {
         >
           <div className="scene__content closing-layout">
             <div className="closing-copy">
-              <span className="scene__eyebrow reveal">Takeaway</span>
-              <h2 className="scene__title reveal delay-1">
+              <span className="scene__eyebrow reveal stagger-1">Takeaway</span>
+              <h2 className="scene__title reveal stagger-2">
                 The quality ceiling is real. Architecture breaks through it.
               </h2>
-              <p className="scene__lede reveal delay-2">
+              <p className="scene__lede reveal stagger-3">
                 When a solo agent ships broken code, the answer is not always "buy a bigger model."
                 Sometimes the answer is "stop letting the builder grade itself."
               </p>
-              <blockquote className="quote-strip reveal delay-3">
+              <blockquote className="quote-strip reveal stagger-4">
                 "{closingQuote.text}"
                 <cite>{closingQuote.author}</cite>
               </blockquote>
-              <div className="closing-actions reveal delay-3">
+              <div className="closing-actions reveal stagger-5">
                 <a className="chrome-button chrome-button--primary" href="https://github.com/ridermw/harnessa" target="_blank" rel="noreferrer">
                   View the repo
                 </a>
@@ -1411,9 +1411,9 @@ function SceneIntro({
 }): JSX.Element {
   return (
     <header className="scene__header">
-      <span className="scene__eyebrow reveal">{eyebrow}</span>
-      <h2 className="scene__title reveal delay-1">{title}</h2>
-      <p className="scene__lede reveal delay-2">{lede}</p>
+      <span className="scene__eyebrow reveal stagger-1">{eyebrow}</span>
+      <h2 className="scene__title reveal stagger-2">{title}</h2>
+      <p className="scene__lede reveal stagger-3">{lede}</p>
     </header>
   );
 }

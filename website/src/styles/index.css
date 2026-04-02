@@ -1102,32 +1102,63 @@ a {
   text-decoration: underline;
 }
 
-.reveal {
+/* ===================================================================
+   REVEAL + ENTRANCE ANIMATION SYSTEM
+   Elements with .reveal animate in when their parent scene becomes active.
+   Use .reveal-up, .reveal-left, .reveal-scale for directional variants.
+   Use .stagger-N classes for sequential timing.
+   =================================================================== */
+
+.reveal,
+.reveal-up,
+.reveal-left,
+.reveal-scale {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity var(--dur-normal) var(--ease-out), transform var(--dur-normal) var(--ease-out);
+  will-change: opacity, transform;
 }
 
-.scene[data-active='true'] .reveal {
-  opacity: 1;
-  transform: translateY(0);
+.reveal,
+.reveal-up {
+  transform: translateY(28px);
 }
 
-.delay-1 {
-  transition-delay: 120ms;
+.reveal-left {
+  transform: translateX(-28px);
 }
 
-.delay-2 {
-  transition-delay: 220ms;
+.reveal-scale {
+  transform: scale(0.88);
 }
 
-.delay-3 {
-  transition-delay: 320ms;
+/* Activate when scene is in view */
+.scene[data-active='true'] .reveal,
+.scene[data-active='true'] .reveal-up {
+  animation: fadeSlideUp var(--dur-normal) var(--ease-out) forwards;
 }
 
-.delay-4 {
-  transition-delay: 420ms;
+.scene[data-active='true'] .reveal-left {
+  animation: fadeSlideIn var(--dur-normal) var(--ease-out) forwards;
 }
+
+.scene[data-active='true'] .reveal-scale {
+  animation: scaleIn var(--dur-normal) var(--ease-out) forwards;
+}
+
+/* Stagger delays — use on children for sequential reveal */
+.stagger-1 { animation-delay: calc(1 * var(--stagger)) !important; }
+.stagger-2 { animation-delay: calc(2 * var(--stagger)) !important; }
+.stagger-3 { animation-delay: calc(3 * var(--stagger)) !important; }
+.stagger-4 { animation-delay: calc(4 * var(--stagger)) !important; }
+.stagger-5 { animation-delay: calc(5 * var(--stagger)) !important; }
+.stagger-6 { animation-delay: calc(6 * var(--stagger)) !important; }
+.stagger-7 { animation-delay: calc(7 * var(--stagger)) !important; }
+.stagger-8 { animation-delay: calc(8 * var(--stagger)) !important; }
+
+/* Backward compat */
+.delay-1 { animation-delay: calc(1 * var(--stagger)) !important; }
+.delay-2 { animation-delay: calc(2 * var(--stagger)) !important; }
+.delay-3 { animation-delay: calc(3 * var(--stagger)) !important; }
+.delay-4 { animation-delay: calc(4 * var(--stagger)) !important; }
 
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -1135,6 +1166,19 @@ a {
   }
 
   .reveal,
+  .reveal-up,
+  .reveal-left,
+  .reveal-scale,
+  .dg-flow__node,
+  .dg-flow__edge,
+  .dg-flow__back-edge,
+  .dg-tree__node,
+  .dg-hub__spoke,
+  .dg-cycle__step,
+  .dg-state__card,
+  .dg-comparison__left,
+  .dg-comparison__right,
+  .dg-timeline__node,
   .appendix__panel,
   .appendix__scrim,
   .chrome-button,
@@ -1341,9 +1385,13 @@ a {
     width: 100% !important;
   }
 
-  .reveal {
+  .reveal,
+  .reveal-up,
+  .reveal-left,
+  .reveal-scale {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
   }
 
   html {

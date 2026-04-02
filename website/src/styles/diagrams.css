@@ -6,7 +6,9 @@
 
 /* ── Shared primitives ──────────────────────────────────────────── */
 
+/* Diagrams inherit act color from parent scene */
 [data-diagram-id] {
+  --node-accent: var(--act-color, var(--accent));
   width: 100%;
   overflow-x: hidden;
 }
@@ -50,8 +52,9 @@
 
 .dg-node__label {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text);
   display: block;
   overflow-wrap: break-word;
@@ -84,9 +87,10 @@
 .dg-flow__track {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
+  padding: 1.5rem;
 }
 
 .dg-flow--vertical .dg-flow__track {
@@ -105,15 +109,27 @@
 
 .dg-flow__node {
   background: var(--panel);
-  border: 1px solid var(--node-accent, var(--border));
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  min-width: 80px;
-  max-width: 200px;
+  border: 2px solid var(--act-color, var(--node-accent, var(--border)));
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  min-width: 140px;
+  max-width: 280px;
   text-align: center;
   position: relative;
   transition: border-color 0.3s ease;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
+}
+
+.dg-flow__node .dg-node__label {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.dg-flow__node .dg-node__desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 .dg-flow__node:hover {
@@ -140,7 +156,7 @@
 
 .dg-flow__arrow {
   width: 24px;
-  height: 2px;
+  height: 3px;
   background: var(--border);
   position: relative;
 }
@@ -149,13 +165,13 @@
   content: '';
   position: absolute;
   right: -1px;
-  top: -4px;
-  border: 5px solid transparent;
-  border-left: 6px solid var(--border);
+  top: -5px;
+  border: 6px solid transparent;
+  border-left: 8px solid var(--border);
 }
 
 .dg-flow--vertical .dg-flow__arrow {
-  width: 2px;
+  width: 3px;
   height: 30px;
 }
 
@@ -251,9 +267,9 @@
   flex-direction: column;
   gap: 0.5rem;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--act-color, var(--node-accent, var(--border)));
   border-radius: 10px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .dg-comparison__side--left {
@@ -277,9 +293,10 @@
 
 .dg-comparison__node {
   padding: 0.6rem 0.8rem;
-  border-left: 3px solid var(--node-accent, var(--border));
+  border-left: 3px solid var(--act-color, var(--node-accent, var(--border)));
   border-radius: 0 6px 6px 0;
   background: rgba(255, 255, 255, 0.02);
+  font-size: 0.95rem;
 }
 
 .dg-comparison__node--dimmed {
@@ -315,7 +332,8 @@
 
 .dg-comparison__boundary-label {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--signal-amber);
@@ -378,8 +396,8 @@
   left: 0.65rem;
   top: 0.5rem;
   bottom: 0.5rem;
-  width: 2px;
-  background: linear-gradient(180deg, var(--signal-blue), var(--signal-green));
+  width: 3px;
+  background: linear-gradient(180deg, var(--act-color, var(--signal-blue)), var(--signal-green));
 }
 
 .dg-timeline__item {
@@ -388,6 +406,17 @@
   align-items: flex-start;
   padding: 0.75rem 0;
   position: relative;
+  min-width: 160px;
+}
+
+.dg-timeline__item .dg-node__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dg-timeline__item .dg-node__detail {
+  font-size: 0.85rem;
 }
 
 .dg-timeline__marker {
@@ -415,6 +444,7 @@
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+  padding: 1rem 1.25rem;
 }
 
 .dg-timeline__body .dg-node__label {
@@ -436,16 +466,19 @@
 
 .dg-tree__root {
   background: var(--panel);
-  border: 1px solid var(--signal-blue);
+  border: 2px solid var(--act-color, var(--node-accent, var(--signal-blue)));
   border-radius: 10px;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   text-align: center;
+  min-width: 200px;
   max-width: 400px;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .dg-tree__branches {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   justify-content: center;
   margin-top: 0;
 }
@@ -456,7 +489,8 @@
   align-items: center;
   gap: 0;
   flex: 1;
-  max-width: 280px;
+  min-width: 180px;
+  max-width: 320px;
 }
 
 .dg-tree__edge {
@@ -470,9 +504,9 @@
 
 .dg-tree__edge::before {
   content: '';
-  width: 2px;
+  width: 3px;
   height: 24px;
-  background: var(--border);
+  background: var(--act-color, var(--accent));
 }
 
 .dg-tree__edge::after {
@@ -480,7 +514,7 @@
   width: 0;
   height: 0;
   border: 5px solid transparent;
-  border-top: 6px solid var(--border);
+  border-top: 6px solid var(--act-color, var(--accent));
 }
 
 .dg-tree__edge-label {
@@ -496,19 +530,21 @@
 
 .dg-tree__node {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 2px solid var(--act-color, var(--node-accent, var(--border)));
   border-radius: 8px;
   padding: 0.75rem 1rem;
   text-align: center;
-  min-width: 160px;
+  min-width: 180px;
 }
 
 .dg-tree__node .dg-node__label {
+  font-size: 0.95rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .dg-tree__node--leaf {
-  border-color: var(--node-accent, var(--border));
+  border-color: var(--act-color, var(--node-accent, var(--border)));
 }
 
 .dg-tree__node--intermediate {
@@ -672,12 +708,17 @@
 
 .dg-cycle__node {
   background: var(--panel);
-  border: 1px solid var(--node-accent, var(--border));
+  border: 2px solid var(--act-color, var(--node-accent, var(--border)));
   border-radius: 10px;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
   text-align: center;
-  min-width: 100px;
+  min-width: 140px;
   transition: border-color 0.3s ease;
+}
+
+.dg-cycle__node .dg-node__label {
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .dg-cycle__node:hover {
@@ -700,7 +741,7 @@
 
 .dg-cycle__arrow {
   width: 30px;
-  height: 2px;
+  height: 3px;
   background: var(--border);
   position: relative;
 }
@@ -709,13 +750,13 @@
   content: '';
   position: absolute;
   right: -1px;
-  top: -4px;
-  border: 5px solid transparent;
-  border-left: 6px solid var(--border);
+  top: -5px;
+  border: 6px solid transparent;
+  border-left: 8px solid var(--border);
 }
 
 .dg-cycle--vertical .dg-cycle__arrow {
-  width: 2px;
+  width: 3px;
   height: 24px;
 }
 
@@ -764,19 +805,23 @@
 
 .dg-cycle__center {
   background: var(--panel-strong);
-  border: 2px solid var(--node-accent, var(--signal-amber));
+  border: 2px solid var(--act-color, var(--node-accent, var(--signal-amber)));
   border-radius: 50%;
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 1rem;
+  padding: 1.25rem;
+  min-width: 160px;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .dg-cycle__center .dg-node__label {
-  font-size: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .dg-cycle__spokes {
@@ -791,12 +836,19 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  min-width: 140px;
+  padding: 1rem;
+}
+
+.dg-cycle__spoke .dg-node__label {
+  font-size: 0.92rem;
+  font-weight: 500;
 }
 
 .dg-cycle__spoke-line {
-  width: 2px;
+  width: 3px;
   height: 16px;
-  background: var(--border);
+  background: var(--act-color, var(--border));
 }
 
 /* ── State Diagram ──────────────────────────────────────────────── */
@@ -811,19 +863,23 @@
 
 .dg-state__card {
   background: var(--panel);
-  border: 2px solid var(--node-accent, var(--border));
+  border: 2px solid var(--act-color, var(--node-accent, var(--border)));
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   text-align: center;
-  min-width: 160px;
-  max-width: 280px;
+  min-width: 200px;
+  max-width: 320px;
   flex: 1;
 }
 
 .dg-state__card .dg-node__label {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 700;
   margin: 0.25rem 0;
+}
+
+.dg-state__card .dg-node__detail {
+  font-size: 0.88rem;
 }
 
 .dg-state__card--before .dg-node__label {
@@ -1088,3 +1144,105 @@
     box-shadow: none;
   }
 }
+
+/* ===================================================================
+   DIAGRAM ENTRANCE ANIMATIONS
+   Nodes and edges animate in when parent scene is active.
+   =================================================================== */
+
+/* Flow diagram nodes stagger in */
+.scene[data-active='true'] .dg-flow__node {
+  animation: scaleIn var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-flow__node:nth-child(1) { animation-delay: 0ms; }
+.scene[data-active='true'] .dg-flow__node:nth-child(2) { animation-delay: 120ms; }
+.scene[data-active='true'] .dg-flow__node:nth-child(3) { animation-delay: 240ms; }
+.scene[data-active='true'] .dg-flow__node:nth-child(4) { animation-delay: 360ms; }
+.scene[data-active='true'] .dg-flow__node:nth-child(5) { animation-delay: 480ms; }
+
+/* Flow edges animate after nodes */
+.scene[data-active='true'] .dg-flow__edge {
+  animation: fadeSlideIn var(--dur-fast) var(--ease-out) forwards;
+  opacity: 0;
+  animation-delay: 200ms;
+}
+
+.scene[data-active='true'] .dg-flow__edge:nth-child(2) { animation-delay: 320ms; }
+.scene[data-active='true'] .dg-flow__edge:nth-child(3) { animation-delay: 440ms; }
+
+/* Back-edge draws in late */
+.scene[data-active='true'] .dg-flow__back-edge {
+  animation: fadeSlideUp var(--dur-slow) var(--ease-out) forwards;
+  opacity: 0;
+  animation-delay: 600ms;
+}
+
+/* Tree nodes cascade in */
+.scene[data-active='true'] .dg-tree__node {
+  animation: scaleIn var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-tree__branch:nth-child(1) .dg-tree__node { animation-delay: 100ms; }
+.scene[data-active='true'] .dg-tree__branch:nth-child(2) .dg-tree__node { animation-delay: 200ms; }
+.scene[data-active='true'] .dg-tree__branch:nth-child(3) .dg-tree__node { animation-delay: 300ms; }
+
+/* Hub-spoke nodes radiate outward */
+.scene[data-active='true'] .dg-hub__spoke {
+  animation: scaleIn var(--dur-normal) var(--ease-spring) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-hub__spoke:nth-child(1) { animation-delay: 100ms; }
+.scene[data-active='true'] .dg-hub__spoke:nth-child(2) { animation-delay: 180ms; }
+.scene[data-active='true'] .dg-hub__spoke:nth-child(3) { animation-delay: 260ms; }
+.scene[data-active='true'] .dg-hub__spoke:nth-child(4) { animation-delay: 340ms; }
+.scene[data-active='true'] .dg-hub__spoke:nth-child(5) { animation-delay: 420ms; }
+
+/* Cycle steps animate in sequence */
+.scene[data-active='true'] .dg-cycle__step {
+  animation: fadeSlideUp var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-cycle__step:nth-child(1) { animation-delay: 100ms; }
+.scene[data-active='true'] .dg-cycle__step:nth-child(2) { animation-delay: 220ms; }
+.scene[data-active='true'] .dg-cycle__step:nth-child(3) { animation-delay: 340ms; }
+.scene[data-active='true'] .dg-cycle__step:nth-child(4) { animation-delay: 460ms; }
+
+/* State cards fade up */
+.scene[data-active='true'] .dg-state__card {
+  animation: fadeSlideUp var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-state__card:nth-child(1) { animation-delay: 100ms; }
+.scene[data-active='true'] .dg-state__card:nth-child(2) { animation-delay: 200ms; }
+.scene[data-active='true'] .dg-state__card:nth-child(3) { animation-delay: 300ms; }
+
+/* Comparison panels slide in from sides */
+.scene[data-active='true'] .dg-comparison__left {
+  animation: fadeSlideIn var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-comparison__right {
+  animation: fadeSlideIn var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+  animation-delay: 200ms;
+}
+
+/* Timeline nodes stagger */
+.scene[data-active='true'] .dg-timeline__node {
+  animation: fadeSlideUp var(--dur-normal) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.scene[data-active='true'] .dg-timeline__node:nth-child(1) { animation-delay: 80ms; }
+.scene[data-active='true'] .dg-timeline__node:nth-child(2) { animation-delay: 160ms; }
+.scene[data-active='true'] .dg-timeline__node:nth-child(3) { animation-delay: 240ms; }
+.scene[data-active='true'] .dg-timeline__node:nth-child(4) { animation-delay: 320ms; }
+.scene[data-active='true'] .dg-timeline__node:nth-child(5) { animation-delay: 400ms; }
+.scene[data-active='true'] .dg-timeline__node:nth-child(6) { animation-delay: 480ms; }

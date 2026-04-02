@@ -16,7 +16,6 @@ import {
   diagram12DemoFlow,
   diagram13DecisionTree,
   diagram14ModelTiering,
-  diagram15RoundRobin,
 } from './diagrams/specs';
 import {
   heroMetrics,
@@ -25,8 +24,6 @@ import {
   anthropicQuote,
   wallContext,
   wallEvaluation,
-  adversarialInsightPoints,
-  ganAnalogy,
   adversarialQuote,
   goodhartBoundary,
   sprintContracts,
@@ -43,12 +40,9 @@ import {
   claimsConfirmed,
   claimsPartial,
   claimsInconclusive,
-  evaluatorLeniencyObservations,
-  measurementCaveats,
   showcaseKeyLessons,
   showcaseComparison,
   demoFlow,
-  roundRobinCaveat,
   closingQuote,
   appendixRuns,
   appendixCriteria,
@@ -404,46 +398,48 @@ function App(): JSX.Element {
           data-act="1"
           data-active={activeScene === 'anthropic-spark'}
         >
-          <SceneIntro
-            eyebrow="Origin"
-            title="From Anthropic article to tested evidence"
-            lede="Anthropic published the harness idea. Harnessa built it, instrumented it, and ran controlled experiments against it. The output is not incrementally better — it is categorically different."
-          />
-          <div className="scorecard-list">
-            {anthropicSparkComparison.map((row, index) => (
-              <article
-                key={row.approach}
-                className={row.result === 'FAIL' ? 'score-row score-row--featured reveal' : 'score-row reveal'}
-                style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}
-              >
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{row.result}</span>
-                    <h3>{row.approach}</h3>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Origin"
+              title="From Anthropic article to tested evidence"
+              lede="Anthropic published the harness idea. Harnessa built it, instrumented it, and ran controlled experiments against it. The output is not incrementally better — it is categorically different."
+            />
+            <div className="scorecard-list">
+              {anthropicSparkComparison.map((row, index) => (
+                <article
+                  key={row.approach}
+                  className={row.result === 'FAIL' ? 'score-row score-row--featured reveal' : 'score-row reveal'}
+                  style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}
+                >
+                  <div className="score-row__header">
+                    <div>
+                      <span className="panel__tag">{row.result}</span>
+                      <h3>{row.approach}</h3>
+                    </div>
+                    <div className="score-row__winner">{row.cost} / {row.time}</div>
                   </div>
-                  <div className="score-row__winner">{row.cost} / {row.time}</div>
-                </div>
-                <p>{row.note}</p>
-              </article>
-            ))}
-          </div>
-          <blockquote className="quote-strip reveal delay-3">
-            "{anthropicQuote.text}"
-            <cite>{anthropicQuote.author}</cite>
-          </blockquote>
-          <div className="scorecard-list" style={{ marginTop: 'var(--space-4)' }}>
-            {articleVsHarnessa.map((row, index) => (
-              <article key={row.dimension} className="score-row reveal" style={{ transitionDelay: `${(index + 3) * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{row.verdict === 'confirmed' ? '✅' : row.verdict === 'partial' ? '⚠️' : '❓'} {row.verdict}</span>
-                    <h3>{row.dimension}</h3>
+                  <p>{row.note}</p>
+                </article>
+              ))}
+            </div>
+            <blockquote className="quote-strip reveal delay-3">
+              "{anthropicQuote.text}"
+              <cite>{anthropicQuote.author}</cite>
+            </blockquote>
+            <div className="scorecard-list" style={{ marginTop: 'var(--space-4)' }}>
+              {articleVsHarnessa.map((row, index) => (
+                <article key={row.dimension} className="score-row reveal" style={{ transitionDelay: `${(index + 3) * 80}ms` } as CSSProperties}>
+                  <div className="score-row__header">
+                    <div>
+                      <span className="panel__tag">{row.verdict === 'confirmed' ? '✅' : row.verdict === 'partial' ? '⚠️' : '❓'} {row.verdict}</span>
+                      <h3>{row.dimension}</h3>
+                    </div>
                   </div>
-                </div>
-                <p><strong>Article:</strong> {row.article}</p>
-                <p><strong>Harnessa:</strong> {row.harnessa}</p>
-              </article>
-            ))}
+                  <p><strong>Article:</strong> {row.article}</p>
+                  <p><strong>Harnessa:</strong> {row.harnessa}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -454,25 +450,29 @@ function App(): JSX.Element {
           data-act="1"
           data-active={activeScene === 'wall-context'}
         >
-          <SceneIntro
-            eyebrow="Failure Mode"
-            title="Wall 1 — Context degradation"
-            lede="Long-running AI coding sessions lose coherence as context grows. The agent hedges, summarizes, and prematurely wraps up. More tokens ≠ better output."
-          />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">{wallContext.title}</span>
-              <p className="panel__body">{wallContext.body}</p>
-              <div className="signal-strip">{wallContext.signal}</div>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Why it matters</span>
-              <p className="panel__body">
-                A 200K context window does not guarantee a coherent 200K-token work session.
-                The agent's effective reasoning window is much smaller than the advertised limit.
-              </p>
-              <div className="signal-strip">Bigger window ≠ longer coherence</div>
-            </article>
+          <div className="scene__content">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Failure Mode"
+                title="Wall 1 — Context degradation"
+                lede="Long-running AI coding sessions lose coherence as context grows. The agent hedges, summarizes, and prematurely wraps up. More tokens ≠ better output."
+              />
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
+              <article className="panel reveal delay-1">
+                <span className="panel__tag">{wallContext.title}</span>
+                <p className="panel__body">{wallContext.body}</p>
+                <div className="signal-strip">{wallContext.signal}</div>
+              </article>
+              <article className="panel reveal delay-2" style={{ marginTop: 'var(--space-3)' }}>
+                <span className="panel__tag">Why it matters</span>
+                <p className="panel__body">
+                  A 200K context window does not guarantee a coherent 200K-token work session.
+                  The agent's effective reasoning window is much smaller than the advertised limit.
+                </p>
+                <div className="signal-strip">Bigger window ≠ longer coherence</div>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -483,30 +483,34 @@ function App(): JSX.Element {
           data-act="1"
           data-active={activeScene === 'wall-evaluation'}
         >
-          <SceneIntro
-            eyebrow="Failure Mode"
-            title="Wall 2 — Self-evaluation failure"
-            lede="The more dangerous wall. When the same system builds and judges, quality gets flattered. The agent names real issues, then talks itself into shipping anyway."
-          />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">{wallEvaluation.title}</span>
-              <p className="panel__body">{wallEvaluation.body}</p>
-              <div className="signal-strip">{wallEvaluation.signal}</div>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Observed in Harnessa</span>
-              <p className="panel__body">
-                Benchmark 2 (TypeScript): the solo agent scored functionality at 8/10 despite 50% of tests failing.
-                The evaluator was too close to its own work to be honest.
-              </p>
-              <div className="signal-strip">func=8, test pass rate=50%</div>
-            </article>
+          <div className="scene__content">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Failure Mode"
+                title="Wall 2 — Self-evaluation failure"
+                lede="The more dangerous wall. When the same system builds and judges, quality gets flattered. The agent names real issues, then talks itself into shipping anyway."
+              />
+              <blockquote className="quote-strip reveal delay-3">
+                "{adversarialQuote.text}"
+                <cite>{adversarialQuote.author}</cite>
+              </blockquote>
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
+              <article className="panel reveal delay-1">
+                <span className="panel__tag">{wallEvaluation.title}</span>
+                <p className="panel__body">{wallEvaluation.body}</p>
+                <div className="signal-strip">{wallEvaluation.signal}</div>
+              </article>
+              <article className="panel reveal delay-2" style={{ marginTop: 'var(--space-3)' }}>
+                <span className="panel__tag">Observed in Harnessa</span>
+                <p className="panel__body">
+                  Benchmark 2 (TypeScript): the solo agent scored functionality at 8/10 despite 50% of tests failing.
+                  The evaluator was too close to its own work to be honest.
+                </p>
+                <div className="signal-strip">func=8, test pass rate=50%</div>
+              </article>
+            </div>
           </div>
-          <blockquote className="quote-strip reveal delay-3">
-            "{adversarialQuote.text}"
-            <cite>{adversarialQuote.author}</cite>
-          </blockquote>
         </section>
 
         <section
@@ -516,32 +520,12 @@ function App(): JSX.Element {
           data-act="1"
           data-active={activeScene === 'adversarial-insight'}
         >
-          <SceneIntro
-            eyebrow="Core Idea"
-            title="What if builder and critic were different agents?"
-            lede="GANs proved that adversarial tension between a generator and discriminator creates outputs neither achieves alone. The same principle applies to code quality."
-          />
-          <div className="architecture-grid reveal delay-1">
-            <div className="topology-shell">
-              <div className="topology-flow">
-                {adversarialInsightPoints.map((point) => (
-                  <div key={point.label} className="topology-node" style={{ ['--node-accent' as string]: point.accent }}>
-                    <span className="topology-node__name">{point.label}</span>
-                    <strong>{point.description}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="two-up-grid">
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">{ganAnalogy.title}</span>
-              <p className="panel__body">{ganAnalogy.body}</p>
-            </article>
-            <article className="panel reveal delay-3">
-              <span className="panel__tag">What Harnessa is</span>
-              <p className="panel__body">{ganAnalogy.clarification}</p>
-            </article>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Core Idea"
+              title="What if builder and critic were different agents?"
+              lede="GANs proved that adversarial tension between a generator and discriminator creates outputs neither achieves alone. The same principle applies to code quality."
+            />
           </div>
         </section>
 
@@ -560,7 +544,7 @@ function App(): JSX.Element {
               title="Planner → Generator ↔ Evaluator"
               lede="The architecture matters more than one bigger context window. Separate roles, explicit contracts, and independent evaluation create the quality leverage."
             />
-            <div className="scene__diagram reveal-scale stagger-4">
+            <div className="scene__visual reveal-scale stagger-4">
               <DiagramRenderer spec={diagram01TrioPipeline} />
             </div>
           </div>
@@ -574,40 +558,39 @@ function App(): JSX.Element {
           data-active={activeScene === 'goodhart-boundary'}
         >
           <div className="scene__content">
-            <div>
-              <SceneIntro
-                eyebrow="Isolation"
-                title="The Goodhart boundary"
-                lede={`"${goodhartBoundary.principle}" — Goodhart's Law means that if the generator can see the acceptance tests, it will optimize for passing them rather than building genuinely correct software.`}
-              />
-              <div className="panel reveal delay-2" style={{ marginTop: '1.5rem' }}>
-                <span className="panel__tag">How Harnessa enforces it</span>
-                <p className="panel__body">
-                  The Generator and Evaluator run in separate git worktrees. The Generator's worktree uses <code>git sparse-checkout</code> to physically exclude the <code>_eval/</code> directory — it cannot see acceptance tests, fixtures, or hidden grading criteria. The Evaluator's worktree has full access to everything including <code>_eval/</code>. This is not just a convention — it's filesystem-level enforcement.
+            <SceneIntro
+              eyebrow="Isolation"
+              title="The Goodhart boundary"
+              lede={`"${goodhartBoundary.principle}" — Goodhart's Law means that if the generator can see the acceptance tests, it will optimize for passing them rather than building genuinely correct software.`}
+            />
+            <div className="compare-panels">
+              <div className="compare-panel compare-panel--fail">
+                <span className="panel__tag" style={{ color: 'var(--signal-green)' }}>Generator sees</span>
+                <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
+                  {goodhartBoundary.generatorTree.map(f => <li key={f}><code>{f}</code></li>)}
+                </ul>
+                <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+                  Cannot see <code>_eval/</code> — physically excluded via <code>git sparse-checkout</code>.
                 </p>
               </div>
-              <div className="aggregate-strip reveal delay-3">
-                <div>
-                  <span className="chrome-pill">Mechanism</span>
-                  <strong>{goodhartBoundary.mechanism}</strong>
-                </div>
+              <div className="compare-divider" />
+              <div className="compare-panel compare-panel--pass">
+                <span className="panel__tag" style={{ color: 'var(--signal-amber)' }}>Evaluator sees</span>
+                <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
+                  {goodhartBoundary.evaluatorTree.map(f => <li key={f}><code>{f}</code></li>)}
+                </ul>
+                <p style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+                  Full access including <code>_eval/</code> — acceptance tests, fixtures, and hidden grading criteria.
+                </p>
               </div>
             </div>
-            <div className="scene__diagram reveal-scale stagger-4">
+            <div className="reveal-scale stagger-4" style={{ marginTop: 'var(--space-4)' }}>
               <DiagramRenderer spec={diagram02GoodhartBoundary} />
-              <div className="two-up-grid" style={{ marginTop: '1rem', fontSize: '0.85rem' }}>
-                <article className="panel">
-                  <span className="panel__tag" style={{ color: 'var(--signal-green)' }}>Generator sees</span>
-                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
-                    {goodhartBoundary.generatorTree.map(f => <li key={f}><code>{f}</code></li>)}
-                  </ul>
-                </article>
-                <article className="panel">
-                  <span className="panel__tag" style={{ color: 'var(--signal-amber)' }}>Evaluator sees</span>
-                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: 'var(--muted)' }}>
-                    {goodhartBoundary.evaluatorTree.map(f => <li key={f}><code>{f}</code></li>)}
-                  </ul>
-                </article>
+            </div>
+            <div className="aggregate-strip reveal delay-3" style={{ marginTop: 'var(--space-3)' }}>
+              <div>
+                <span className="chrome-pill">Mechanism</span>
+                <strong>{goodhartBoundary.mechanism}</strong>
               </div>
             </div>
           </div>
@@ -621,18 +604,16 @@ function App(): JSX.Element {
           data-active={activeScene === 'sprint-contracts'}
         >
           <div className="scene__content">
-            <div>
-              <SceneIntro
-                eyebrow="Contracts"
-                title="Spec-driven sprint agreements"
-                lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
-              />
-              <div className="aggregate-strip reveal delay-3">
+            <SceneIntro
+              eyebrow="Contracts"
+              title="Spec-driven sprint agreements"
+              lede="The planner creates the contract. The generator proposes. The evaluator holds the line. No one agent decides when 'done' means done."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
+              <DiagramRenderer spec={diagram03SprintContract} />
+              <div className="aggregate-strip reveal delay-3" style={{ marginTop: 'var(--space-3)' }}>
                 <p>{sprintContracts.keyInsight}</p>
               </div>
-            </div>
-            <div className="scene__diagram reveal-scale stagger-4">
-              <DiagramRenderer spec={diagram03SprintContract} />
             </div>
           </div>
         </section>
@@ -645,12 +626,14 @@ function App(): JSX.Element {
           data-active={activeScene === 'files-on-disk'}
         >
           <div className="scene__content">
-            <SceneIntro
-              eyebrow="Communication"
-              title="Files on disk, not chat history"
-              lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
-            />
-            <div className="scene__diagram reveal-scale stagger-4">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Communication"
+                title="Files on disk, not chat history"
+                lede="Agents communicate through files, not message threads. Every handoff is an artifact on disk — auditable, resumable, and free from context window pressure."
+              />
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
               <DiagramRenderer spec={diagram04FilesHandoff} />
             </div>
           </div>
@@ -669,7 +652,7 @@ function App(): JSX.Element {
               title="Every run produces structured evidence"
               lede={telemetryDetail.description}
             />
-            <div className="scene__diagram reveal-scale stagger-4">
+            <div className="scene__visual reveal-scale stagger-4">
               <DiagramRenderer spec={diagram05TelemetryStack} />
             </div>
           </div>
@@ -684,12 +667,12 @@ function App(): JSX.Element {
           data-act="3"
           data-active={activeScene === 'karpathy-problem'}
         >
-          <SceneIntro
-            eyebrow="Skepticism Engine"
-            title="The Karpathy problem"
-            lede={karpathyQuote.insight}
-          />
-          <div className="scene__body">
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Skepticism Engine"
+              title="The Karpathy problem"
+              lede={karpathyQuote.insight}
+            />
             <div className="critic-grid">
               <article className="panel quote-panel reveal delay-1">
                 <span className="panel__tag">Karpathy problem</span>
@@ -733,28 +716,30 @@ function App(): JSX.Element {
           data-act="3"
           data-active={activeScene === 'anti-sycophancy'}
         >
-          <SceneIntro
-            eyebrow="Hard Rules"
-            title="Anti-people-pleasing guardrails"
-            lede="Skepticism by prompt is not enough. Hard rules prevent the evaluator from rubber-stamping mediocre work, even when the LLM's instinct is to be agreeable."
-          />
-          <div className="critic-grid">
-            <article className="panel rules-panel reveal delay-1">
-              <span className="panel__tag">Anti-sycophancy rules</span>
-              <ul>
-                {criticRules.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Why hard rules?</span>
-              <p className="panel__body">
-                Without explicit thresholds, evaluators trend toward 7/10 on everything.
-                Hard ceilings force honest scores even when the LLM wants to be polite.
-              </p>
-              <div className="signal-strip">All scores ≥ 7 = rubber-stamp suspicion</div>
-            </article>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Hard Rules"
+              title="Anti-people-pleasing guardrails"
+              lede="Skepticism by prompt is not enough. Hard rules prevent the evaluator from rubber-stamping mediocre work, even when the LLM's instinct is to be agreeable."
+            />
+            <div className="scene__visual">
+              <article className="panel rules-panel reveal delay-1">
+                <span className="panel__tag">Anti-sycophancy rules</span>
+                <ul>
+                  {criticRules.map((rule) => (
+                    <li key={rule}>{rule}</li>
+                  ))}
+                </ul>
+              </article>
+              <article className="panel reveal delay-2">
+                <span className="panel__tag">Why hard rules?</span>
+                <p className="panel__body">
+                  Without explicit thresholds, evaluators trend toward 7/10 on everything.
+                  Hard ceilings force honest scores even when the LLM wants to be polite.
+                </p>
+                <div className="signal-strip">All scores ≥ 7 = rubber-stamp suspicion</div>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -765,25 +750,31 @@ function App(): JSX.Element {
           data-act="3"
           data-active={activeScene === 'criteria-thresholds'}
         >
-          <SceneIntro
-            eyebrow="Grading"
-            title="Criteria and pass thresholds"
-            lede="Four dimensions, weighted by importance. HIGH-weight criteria need a 6 to pass. The evaluator grades each independently — no single-number summary."
-          />
-          <div className="scorecard-list">
-            {criteriaThresholds.map((row, index) => (
-              <article key={row.criterion} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{row.weight}</span>
-                    <h3>{row.criterion}</h3>
-                  </div>
-                  <div className="score-row__winner">≥ {row.threshold}</div>
-                </div>
-                <p>{row.meaning}</p>
-                <p style={{ opacity: 0.7, fontSize: '0.85em' }}>{row.calibrationLow} · {row.calibrationHigh}</p>
-              </article>
-            ))}
+          <div className="scene__content">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Grading"
+                title="Criteria and pass thresholds"
+                lede="Four dimensions, weighted by importance. HIGH-weight criteria need a 6 to pass. The evaluator grades each independently — no single-number summary."
+              />
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
+              <div className="scorecard-list">
+                {criteriaThresholds.map((row, index) => (
+                  <article key={row.criterion} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                    <div className="score-row__header">
+                      <div>
+                        <span className="panel__tag">{row.weight}</span>
+                        <h3>{row.criterion}</h3>
+                      </div>
+                      <div className="score-row__winner">≥ {row.threshold}</div>
+                    </div>
+                    <p>{row.meaning}</p>
+                    <p style={{ opacity: 0.7, fontSize: '0.85em' }}>{row.calibrationLow} · {row.calibrationHigh}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -794,34 +785,12 @@ function App(): JSX.Element {
           data-act="3"
           data-active={activeScene === 'experiment-design'}
         >
-          <SceneIntro
-            eyebrow="Controls"
-            title="Solo vs trio — same model, different architecture"
-            lede={`The independent variable is architecture. Everything else is controlled: ${experimentDesign.controls.map((c) => c.variable.toLowerCase()).join(', ')}.`}
-          />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">Controlled variables</span>
-              <ul className="decision-list">
-                {experimentDesign.controls.map((c) => (
-                  <li key={c.variable}><strong>{c.variable}:</strong> {c.value}</li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">Measured outcomes</span>
-              <ul className="decision-list">
-                {experimentDesign.dependentVariables.map((v) => (
-                  <li key={v}>{v}</li>
-                ))}
-              </ul>
-            </article>
-          </div>
-          <div className="aggregate-strip reveal delay-3">
-            <p><strong>Independent variable:</strong> {experimentDesign.independentVariable}</p>
-          </div>
-          <div className="aggregate-strip reveal delay-4">
-            <p><strong>{experimentDesign.coverage.benchmarks} benchmarks</strong> across <strong>{experimentDesign.coverage.languages} languages</strong> ({experimentDesign.coverage.languageList.join(', ')}) · <strong>{experimentDesign.coverage.totalRuns} total runs</strong> · {experimentDesign.coverage.runsNote}</p>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Controls"
+              title="Solo vs trio — same model, different architecture"
+              lede={`The independent variable is architecture. Everything else is controlled: ${experimentDesign.controls.map((c) => c.variable.toLowerCase()).join(', ')}. ${experimentDesign.coverage.benchmarks} benchmarks across ${experimentDesign.coverage.languages} languages, ${experimentDesign.coverage.totalRuns} total runs.`}
+            />
           </div>
         </section>
 
@@ -832,24 +801,26 @@ function App(): JSX.Element {
           data-act="3"
           data-active={activeScene === 'benchmark-matrix'}
         >
-          <SceneIntro
-            eyebrow="Test Suite"
-            title="Five benchmarks across three languages"
-            lede="Each benchmark has real code with a seeded bug or missing feature, visible tests (some failing), and hidden acceptance tests the generator cannot see."
-          />
-          <div className="scorecard-list">
-            {benchmarkMatrix.map((row, index) => (
-              <article key={row.id} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{row.size} · {row.type}</span>
-                    <h3>{row.description}</h3>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Test Suite"
+              title="Five benchmarks across three languages"
+              lede="Each benchmark has real code with a seeded bug or missing feature, visible tests (some failing), and hidden acceptance tests the generator cannot see."
+            />
+            <div className="scene__visual">
+              {benchmarkMatrix.map((row, index) => (
+                <article key={row.id} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                  <div className="score-row__header">
+                    <div>
+                      <span className="panel__tag">{row.size} · {row.type}</span>
+                      <h3>{row.description}</h3>
+                    </div>
+                    <div className="score-row__winner">{row.language}</div>
                   </div>
-                  <div className="score-row__winner">{row.language}</div>
-                </div>
-                <p><code>{row.id}</code> · {row.loc} · {row.duration}</p>
-              </article>
-            ))}
+                  <p><code>{row.id}</code> · {row.loc} · {row.duration}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -862,24 +833,26 @@ function App(): JSX.Element {
           data-act="4"
           data-active={activeScene === 'headline-result'}
         >
-          <SceneIntro
-            eyebrow="Headline Result"
-            title="Same task. Same model. Same tools. Different architecture."
-            lede="The full-stack benchmark is the story to remember: WebSocket notifications were broken in solo mode and working in trio mode."
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram06HeadlineResult} />
-          </div>
-          <div className="metric-comparison reveal delay-4">
-            {evidenceMetrics.map((metric) => (
-              <div key={metric.label} className="comparison-row">
-                <span>{metric.label}</span>
-                <div className="comparison-row__values">
-                  <strong className="comparison-row__solo">{metric.solo}</strong>
-                  <strong className="comparison-row__trio">{metric.trio}</strong>
+          <div className="scene__content">
+            <span className="scene__eyebrow reveal stagger-1">Headline Result</span>
+            <h1 className="scene__title reveal stagger-2">Same task. Same model. Same tools. Different architecture.</h1>
+            <p className="scene__lede reveal stagger-3">
+              The full-stack benchmark is the story to remember: WebSocket notifications were broken in solo mode and working in trio mode.
+            </p>
+            <div className="reveal stagger-4">
+              <DiagramRenderer spec={diagram06HeadlineResult} />
+            </div>
+            <div className="metric-comparison reveal stagger-5">
+              {evidenceMetrics.map((metric) => (
+                <div key={metric.label} className="comparison-row">
+                  <span>{metric.label}</span>
+                  <div className="comparison-row__values">
+                    <strong className="comparison-row__solo">{metric.solo}</strong>
+                    <strong className="comparison-row__trio">{metric.trio}</strong>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
 
@@ -890,39 +863,45 @@ function App(): JSX.Element {
           data-act="4"
           data-active={activeScene === 'full-scorecard'}
         >
-          <SceneIntro
-            eyebrow="Benchmark Grid"
-            title="Trio wins where complexity starts to bite"
-            lede="The scorecard matters because it stops the story from becoming propaganda: trio is not always worth it, but it clearly helps when the task crosses the model's solo reliability threshold."
-          />
-          <div className="scorecard-list">
-            {scorecardRows.map((row, index) => (
-              <article
-                key={row.benchmark}
-                className={row.benchmark === 'medium-feature-fullstack' ? 'score-row score-row--featured reveal' : 'score-row reveal'}
-                style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}
-              >
-                <div className="score-row__header">
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Benchmark Grid"
+              title="Trio wins where complexity starts to bite"
+              lede="The scorecard matters because it stops the story from becoming propaganda: trio is not always worth it, but it clearly helps when the task crosses the model's solo reliability threshold."
+            />
+            <div className="scene__visual">
+              <div>
+                <div className="scorecard-list">
+                  {scorecardRows.map((row, index) => (
+                    <article
+                      key={row.benchmark}
+                      className={row.benchmark === 'medium-feature-fullstack' ? 'score-row score-row--featured reveal' : 'score-row reveal'}
+                      style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}
+                    >
+                      <div className="score-row__header">
+                        <div>
+                          <span className="panel__tag">{row.verdict}</span>
+                          <h3>{row.label}</h3>
+                        </div>
+                        <div className="score-row__winner">{row.winner}</div>
+                      </div>
+                      <div className="score-bars">
+                        <ScoreBar label="Solo" value={row.solo} tone="solo" />
+                        <ScoreBar label="Trio" value={row.trio} tone="trio" />
+                      </div>
+                      <p>{row.note}</p>
+                    </article>
+                  ))}
+                </div>
+                <div className="aggregate-strip reveal delay-4">
                   <div>
-                    <span className="panel__tag">{row.verdict}</span>
-                    <h3>{row.label}</h3>
+                    <span className="chrome-pill">Aggregate</span>
+                    <strong>Mean functionality: 4.8 → 7.6</strong>
                   </div>
-                  <div className="score-row__winner">{row.winner}</div>
+                  <p>Trio is ~1.8x slower in wall-clock time, but the overhead buys quality right where solo starts to crack.</p>
                 </div>
-                <div className="score-bars">
-                  <ScoreBar label="Solo" value={row.solo} tone="solo" />
-                  <ScoreBar label="Trio" value={row.trio} tone="trio" />
-                </div>
-                <p>{row.note}</p>
-              </article>
-            ))}
-          </div>
-          <div className="aggregate-strip reveal delay-4">
-            <div>
-              <span className="chrome-pill">Aggregate</span>
-              <strong>Mean functionality: 4.8 → 7.6</strong>
+              </div>
             </div>
-            <p>Trio is ~1.8x slower in wall-clock time, but the overhead buys quality right where solo starts to crack.</p>
           </div>
         </section>
 
@@ -933,28 +912,34 @@ function App(): JSX.Element {
           data-act="4"
           data-active={activeScene === 'difficulty-classification'}
         >
-          <SceneIntro
-            eyebrow="Difficulty Zones"
-            title="Too easy, in the zone, too hard"
-            lede="The trio is not universally better. Its value depends on where the task sits relative to the model's solo capability ceiling."
-          />
-          <div className="scorecard-list">
-            {difficultyZones.map((zone, index) => (
-              <article key={zone.zone} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag" style={{ borderColor: zone.color }}>{zone.zone}</span>
-                    <h3>{zone.description}</h3>
-                  </div>
-                </div>
-                <p><strong>{zone.example}</strong></p>
-                <ul style={{ margin: '0.5em 0 0 1.2em', opacity: 0.8, fontSize: '0.85em' }}>
-                  {zone.benchmarks.map((b) => (
-                    <li key={b}>{b}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+          <div className="scene__content">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Difficulty Zones"
+                title="Too easy, in the zone, too hard"
+                lede="The trio is not universally better. Its value depends on where the task sits relative to the model's solo capability ceiling."
+              />
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
+              <div className="scorecard-list">
+                {difficultyZones.map((zone, index) => (
+                  <article key={zone.zone} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                    <div className="score-row__header">
+                      <div>
+                        <span className="panel__tag" style={{ borderColor: zone.color }}>{zone.zone}</span>
+                        <h3>{zone.description}</h3>
+                      </div>
+                    </div>
+                    <p><strong>{zone.example}</strong></p>
+                    <ul style={{ margin: '0.5em 0 0 1.2em', opacity: 0.8, fontSize: '0.85em' }}>
+                      {zone.benchmarks.map((b) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -965,23 +950,27 @@ function App(): JSX.Element {
           data-act="4"
           data-active={activeScene === 'iteration-curve'}
         >
-          <SceneIntro
-            eyebrow="Iteration Curve"
-            title="The feedback loop works before it plateaus"
-            lede="Multi-iteration benchmarks start harsh, then rise sharply after explicit evaluator feedback. The Go race condition shows the limit: feedback helps, but it cannot force a model past its capability ceiling."
-          />
-          <div className="feedback-grid reveal delay-1">
-            <div className="panel chart-panel">
-              <span className="panel__tag">Average score by iteration</span>
-              <IterationChart active={activeScene === 'iteration-curve'} />
-            </div>
-            <div className="panel feedback-notes">
-              <span className="panel__tag">What the chart says</span>
-              <ul>
-                <li>Python bugfix: 5.0 → 9.5 after one evaluator catch.</li>
-                <li>Python tags: 3.25 → 8.0 after targeted feedback.</li>
-                <li>Go race: 2.75 → 6.5 → 7.25, but still no PASS verdict.</li>
-              </ul>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Iteration Curve"
+              title="The feedback loop works before it plateaus"
+              lede="Multi-iteration benchmarks start harsh, then rise sharply after explicit evaluator feedback. The Go race condition shows the limit: feedback helps, but it cannot force a model past its capability ceiling."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
+              <div className="feedback-grid">
+                <div className="panel chart-panel">
+                  <span className="panel__tag">Average score by iteration</span>
+                  <IterationChart active={activeScene === 'iteration-curve'} />
+                </div>
+                <div className="panel feedback-notes">
+                  <span className="panel__tag">What the chart says</span>
+                  <ul>
+                    <li>Python bugfix: 5.0 → 9.5 after one evaluator catch.</li>
+                    <li>Python tags: 3.25 → 8.0 after targeted feedback.</li>
+                    <li>Go race: 2.75 → 6.5 → 7.25, but still no PASS verdict.</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -993,23 +982,25 @@ function App(): JSX.Element {
           data-act="4"
           data-active={activeScene === 'claims-confirmed'}
         >
-          <SceneIntro
-            eyebrow="Validated"
-            title="Five confirmed claims from the article"
-            lede="These Anthropic article claims held up under controlled testing. The evidence is directional (N=11) but consistent."
-          />
-          <div className="scorecard-list">
-            {claimsConfirmed.map((item, index) => (
-              <article key={item.claim} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">✅ {item.articleRef}</span>
-                    <h3>{item.claim}</h3>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Validated"
+              title="Five confirmed claims from the article"
+              lede="These Anthropic article claims held up under controlled testing. The evidence is directional (N=11) but consistent."
+            />
+            <div className="scene__visual">
+              {claimsConfirmed.map((item, index) => (
+                <article key={item.claim} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
+                  <div className="score-row__header">
+                    <div>
+                      <span className="panel__tag">✅ {item.articleRef}</span>
+                      <h3>{item.claim}</h3>
+                    </div>
                   </div>
-                </div>
-                <p>{item.evidence}</p>
-              </article>
-            ))}
+                  <p>{item.evidence}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -1022,34 +1013,36 @@ function App(): JSX.Element {
           data-act="5"
           data-active={activeScene === 'claims-partial'}
         >
-          <SceneIntro
-            eyebrow="Nuance"
-            title="Partial and inconclusive claims"
-            lede="Not every article claim survived testing. Honest reporting means showing where the evidence is thin or mixed."
-          />
-          <div className="two-up-grid">
-            <article className="panel reveal delay-1">
-              <span className="panel__tag">⚠️ Partially confirmed</span>
-              <ul className="decision-list">
-                {claimsPartial.map((item) => (
-                  <li key={item.claim}>
-                    <strong>{item.claim}</strong> <em>({item.articleRef})</em>
-                    <br />{item.evidence}
-                  </li>
-                ))}
-              </ul>
-            </article>
-            <article className="panel reveal delay-2">
-              <span className="panel__tag">❓ Inconclusive</span>
-              <ul className="decision-list decision-list--muted">
-                {claimsInconclusive.map((item) => (
-                  <li key={item.claim}>
-                    <strong>{item.claim}</strong> <em>({item.articleRef})</em>
-                    <br />{item.evidence}
-                  </li>
-                ))}
-              </ul>
-            </article>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Nuance"
+              title="Partial and inconclusive claims"
+              lede="Not every article claim survived testing. Honest reporting means showing where the evidence is thin or mixed."
+            />
+            <div className="two-up-grid">
+              <article className="panel reveal delay-1">
+                <span className="panel__tag">⚠️ Partially confirmed</span>
+                <ul className="decision-list">
+                  {claimsPartial.map((item) => (
+                    <li key={item.claim}>
+                      <strong>{item.claim}</strong> <em>({item.articleRef})</em>
+                      <br />{item.evidence}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <article className="panel reveal delay-2">
+                <span className="panel__tag">❓ Inconclusive</span>
+                <ul className="decision-list decision-list--muted">
+                  {claimsInconclusive.map((item) => (
+                    <li key={item.claim}>
+                      <strong>{item.claim}</strong> <em>({item.articleRef})</em>
+                      <br />{item.evidence}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -1060,33 +1053,12 @@ function App(): JSX.Element {
           data-act="5"
           data-active={activeScene === 'evaluator-leniency'}
         >
-          <SceneIntro
-            eyebrow="Measurement Gap"
-            title="The evaluator is not perfect"
-            lede="Even with hard rules and anti-sycophancy prompting, the evaluator still shows leniency. This is an unsolved problem, not an oversight."
-          />
-          <div className="scorecard-list">
-            {evaluatorLeniencyObservations.map((obs, index) => (
-              <article key={obs.observation} className="score-row reveal" style={{ transitionDelay: `${index * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{obs.severity}</span>
-                    <h3>{obs.observation}</h3>
-                  </div>
-                </div>
-                <p>{obs.detail}</p>
-              </article>
-            ))}
-          </div>
-          <div className="panel reveal delay-4" style={{ marginTop: 'var(--space-4)' }}>
-            <span className="panel__tag">Measurement caveats</span>
-            <ul className="decision-list">
-              {measurementCaveats.map((c) => (
-                <li key={c.caveat}>
-                  <strong>{c.caveat}:</strong> {c.detail}
-                </li>
-              ))}
-            </ul>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Measurement Gap"
+              title="The evaluator is not perfect"
+              lede="Even with hard rules and anti-sycophancy prompting, the evaluator still shows leniency. This is an unsolved problem, not an oversight."
+            />
           </div>
         </section>
 
@@ -1097,18 +1069,18 @@ function App(): JSX.Element {
           data-act="5"
           data-active={activeScene === 'industry-timeline'}
         >
-          <SceneIntro
-            eyebrow="Industry Convergence"
-            title="This is not one lab's quirky workflow"
-            lede="Anthropic, Claude Code, OpenAI Symphony, and community toolchains keep rediscovering the same foundations: isolated workspaces, specialized roles, and evaluation as architecture."
-          />
-          <div className="scene__body">
-            <div className="reveal delay-1">
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Industry Convergence"
+              title="This is not one lab's quirky workflow"
+              lede="Anthropic, Claude Code, OpenAI Symphony, and community toolchains keep rediscovering the same foundations: isolated workspaces, specialized roles, and evaluation as architecture."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
               <DiagramRenderer spec={diagram09IndustryTimeline} />
-            </div>
-            <div className="panel reveal delay-2">
-              <span className="panel__tag">⚠️ Industry context — not Harnessa experiment evidence</span>
-              <p className="panel__body">These events show convergence toward multi-agent orchestration across the industry. Harnessa validates one specific architecture; the timeline shows that the broader pattern is not an isolated bet.</p>
+              <div className="panel reveal delay-2" style={{ marginTop: 'var(--space-3)' }}>
+                <span className="panel__tag">⚠️ Industry context — not Harnessa experiment evidence</span>
+                <p className="panel__body">These events show convergence toward multi-agent orchestration across the industry. Harnessa validates one specific architecture; the timeline shows that the broader pattern is not an isolated bet.</p>
+              </div>
             </div>
           </div>
         </section>
@@ -1120,34 +1092,36 @@ function App(): JSX.Element {
           data-act="5"
           data-active={activeScene === 'ecosystem-network'}
         >
-          <SceneIntro
-            eyebrow="Ecosystem"
-            title="Outside voices confirm the direction"
-            lede="Independent teams and projects keep arriving at the same architectural patterns — isolated agents, structured evaluation, and adversarial feedback loops."
-          />
-          <div className="scene__body">
-            <div className="reveal delay-1">
-              <DiagramRenderer spec={diagram10EcosystemNetwork} />
-            </div>
-            <div className="scorecard-list">
-              <article className="score-row reveal delay-2">
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">Independent validation</span>
-                    <h3>Cross-model review pattern</h3>
-                  </div>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Ecosystem"
+              title="Outside voices confirm the direction"
+              lede="Independent teams and projects keep arriving at the same architectural patterns — isolated agents, structured evaluation, and adversarial feedback loops."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
+              <div>
+                <DiagramRenderer spec={diagram10EcosystemNetwork} />
+                <div className="scorecard-list" style={{ marginTop: 'var(--space-3)' }}>
+                  <article className="score-row reveal delay-2">
+                    <div className="score-row__header">
+                      <div>
+                        <span className="panel__tag">Independent validation</span>
+                        <h3>Cross-model review pattern</h3>
+                      </div>
+                    </div>
+                    <p>Using one model to evaluate another model's work — the same principle Harnessa uses — is emerging independently across toolchains. GStack's /codex and /review skills implement this as a second-opinion gate.</p>
+                  </article>
+                  <article className="score-row reveal delay-3">
+                    <div className="score-row__header">
+                      <div>
+                        <span className="panel__tag">Open source</span>
+                        <h3>OpenHands and community harnesses</h3>
+                      </div>
+                    </div>
+                    <p>Open-source projects are building their own multi-agent evaluation loops. The pattern is converging on: isolated workspaces, structured evaluation criteria, and adversarial feedback as architecture rather than prompting.</p>
+                  </article>
                 </div>
-                <p>Using one model to evaluate another model's work — the same principle Harnessa uses — is emerging independently across toolchains. GStack's /codex and /review skills implement this as a second-opinion gate.</p>
-              </article>
-              <article className="score-row reveal delay-3">
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">Open source</span>
-                    <h3>OpenHands and community harnesses</h3>
-                  </div>
-                </div>
-                <p>Open-source projects are building their own multi-agent evaluation loops. The pattern is converging on: isolated workspaces, structured evaluation criteria, and adversarial feedback as architecture rather than prompting.</p>
-              </article>
+              </div>
             </div>
           </div>
         </section>
@@ -1159,33 +1133,37 @@ function App(): JSX.Element {
           data-act="5"
           data-active={activeScene === 'showcase-rebuild'}
         >
-          <SceneIntro
-            eyebrow="Case Study"
-            title="Monolith to proper app in two iterations"
-            lede="The showcase rebuild is the trio pattern in action: iteration 1 shipped a 1-file monolith. The evaluator rejected it. Iteration 2 produced a 32-file full-stack application."
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram11ShowcaseRebuild} />
-          </div>
-          <div className="headline-grid" style={{ marginTop: 'var(--space-4)' }}>
-            <article className="state-card state-card--solo reveal delay-2">
-              <span className="panel__tag">Iteration 1 — {showcaseComparison.iteration1.verdict}</span>
-              <strong>{showcaseComparison.iteration1.files} file · {showcaseComparison.iteration1.lines} lines · {showcaseComparison.iteration1.tests} tests</strong>
-              <p>{showcaseComparison.iteration1.note}</p>
-            </article>
-            <article className="state-card state-card--trio reveal delay-3">
-              <span className="panel__tag">Iteration 2 — {showcaseComparison.iteration2.verdict}</span>
-              <strong>{showcaseComparison.iteration2.files} files · {showcaseComparison.iteration2.components} components · {showcaseComparison.iteration2.tests} tests</strong>
-              <p>{showcaseComparison.iteration2.note}</p>
-            </article>
-          </div>
-          <div className="panel reveal delay-4">
-            <span className="panel__tag">Key lessons</span>
-            <ul className="decision-list">
-              {showcaseKeyLessons.map((lesson) => (
-                <li key={lesson}>{lesson}</li>
-              ))}
-            </ul>
+          <div className="scene__content">
+            <div className="scene__intro">
+              <SceneIntro
+                eyebrow="Case Study"
+                title="Monolith to proper app in two iterations"
+                lede="The showcase rebuild is the trio pattern in action: iteration 1 shipped a 1-file monolith. The evaluator rejected it. Iteration 2 produced a 32-file full-stack application."
+              />
+              <div className="panel reveal delay-4" style={{ marginTop: 'var(--space-3)' }}>
+                <span className="panel__tag">Key lessons</span>
+                <ul className="decision-list">
+                  {showcaseKeyLessons.map((lesson) => (
+                    <li key={lesson}>{lesson}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="scene__visual reveal-scale stagger-4">
+              <DiagramRenderer spec={diagram11ShowcaseRebuild} />
+              <div className="headline-grid" style={{ marginTop: 'var(--space-4)' }}>
+                <article className="state-card state-card--solo reveal delay-2">
+                  <span className="panel__tag">Iteration 1 — {showcaseComparison.iteration1.verdict}</span>
+                  <strong>{showcaseComparison.iteration1.files} file · {showcaseComparison.iteration1.lines} lines · {showcaseComparison.iteration1.tests} tests</strong>
+                  <p>{showcaseComparison.iteration1.note}</p>
+                </article>
+                <article className="state-card state-card--trio reveal delay-3">
+                  <span className="panel__tag">Iteration 2 — {showcaseComparison.iteration2.verdict}</span>
+                  <strong>{showcaseComparison.iteration2.files} files · {showcaseComparison.iteration2.components} components · {showcaseComparison.iteration2.tests} tests</strong>
+                  <p>{showcaseComparison.iteration2.note}</p>
+                </article>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1198,45 +1176,49 @@ function App(): JSX.Element {
           data-act="6"
           data-active={activeScene === 'demo-flow'}
         >
-          <SceneIntro
-            eyebrow="Live Demo"
-            title="One command, three agents"
-            lede="The /harnessa skill runs the full trio pipeline inside any Copilot CLI session. No API keys, no setup — just the command."
-          />
-          <div className="reveal delay-1">
-            <DiagramRenderer spec={diagram12DemoFlow} />
-          </div>
-          <div className="panel reveal delay-2" style={{ marginTop: 'var(--space-4)' }}>
-            <span className="panel__tag">Command</span>
-            <div className="verdict-code">
-              <pre>{demoFlow.command}</pre>
-            </div>
-          </div>
-          <div className="scorecard-list" style={{ marginTop: 'var(--space-3)' }}>
-            {demoFlow.phases.map((phase, index) => (
-              <article key={phase.name} className="score-row reveal" style={{ transitionDelay: `${(index + 2) * 80}ms` } as CSSProperties}>
-                <div className="score-row__header">
-                  <div>
-                    <span className="panel__tag">{phase.name}</span>
-                    <h3>{phase.description}</h3>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Live Demo"
+              title="One command, three agents"
+              lede="The /harnessa skill runs the full trio pipeline inside any Copilot CLI session. No API keys, no setup — just the command."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
+              <div>
+                <DiagramRenderer spec={diagram12DemoFlow} />
+                <div className="panel reveal delay-2" style={{ marginTop: 'var(--space-4)' }}>
+                  <span className="panel__tag">Command</span>
+                  <div className="verdict-code">
+                    <pre>{demoFlow.command}</pre>
                   </div>
-                  <div className="score-row__winner"><code>{phase.artifact}</code></div>
                 </div>
-              </article>
-            ))}
-          </div>
-          <div className="two-up-grid" style={{ marginTop: 'var(--space-4)' }}>
-            <article className="panel reveal delay-5">
-              <span className="panel__tag">{demoFlow.paths.skill.label}</span>
-              <p className="panel__body">{demoFlow.paths.skill.detail}</p>
-            </article>
-            <article className="panel reveal delay-6">
-              <span className="panel__tag">{demoFlow.paths.harness.label}</span>
-              <p className="panel__body">{demoFlow.paths.harness.detail}</p>
-            </article>
-          </div>
-          <div className="aggregate-strip reveal delay-7">
-            <p>{demoFlow.note}</p>
+                <div className="scorecard-list" style={{ marginTop: 'var(--space-3)' }}>
+                  {demoFlow.phases.map((phase, index) => (
+                    <article key={phase.name} className="score-row reveal" style={{ transitionDelay: `${(index + 2) * 80}ms` } as CSSProperties}>
+                      <div className="score-row__header">
+                        <div>
+                          <span className="panel__tag">{phase.name}</span>
+                          <h3>{phase.description}</h3>
+                        </div>
+                        <div className="score-row__winner"><code>{phase.artifact}</code></div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <div className="two-up-grid" style={{ marginTop: 'var(--space-4)' }}>
+                  <article className="panel reveal delay-5">
+                    <span className="panel__tag">{demoFlow.paths.skill.label}</span>
+                    <p className="panel__body">{demoFlow.paths.skill.detail}</p>
+                  </article>
+                  <article className="panel reveal delay-6">
+                    <span className="panel__tag">{demoFlow.paths.harness.label}</span>
+                    <p className="panel__body">{demoFlow.paths.harness.detail}</p>
+                  </article>
+                </div>
+                <div className="aggregate-strip reveal delay-7">
+                  <p>{demoFlow.note}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1247,34 +1229,36 @@ function App(): JSX.Element {
           data-act="6"
           data-active={activeScene === 'decision-tree'}
         >
-          <SceneIntro
-            eyebrow="Operating Model"
-            title="When trio is worth the overhead"
-            lede="The trio is not a religion. It is an operating pattern for tasks where solo output is likely to be wrong, incomplete, or self-flatteringly over-scored."
-          />
-          <div className="scene__body">
-            <div className="reveal delay-1">
-              <DiagramRenderer spec={diagram13DecisionTree} />
-            </div>
-            <div className="two-up-grid">
-              <article className="panel reveal delay-2">
-                <span className="panel__tag">Use trio when</span>
-                <ul className="decision-list">
-                  <li>Multi-file features where integration matters</li>
-                  <li>Uncertain correctness — "will this actually work?"</li>
-                  <li>Medium-complexity tasks at the edge of model capability</li>
-                  <li>Broken output is expensive to debug manually</li>
-                </ul>
-              </article>
-              <article className="panel reveal delay-3">
-                <span className="panel__tag">Skip trio when</span>
-                <ul className="decision-list">
-                  <li>Single-line fixes or simple refactors</li>
-                  <li>Dependency version bumps</li>
-                  <li>Tasks with known, verified answers</li>
-                  <li>When the overhead costs more than the risk</li>
-                </ul>
-              </article>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Operating Model"
+              title="When trio is worth the overhead"
+              lede="The trio is not a religion. It is an operating pattern for tasks where solo output is likely to be wrong, incomplete, or self-flatteringly over-scored."
+            />
+            <div className="scene__visual reveal-scale stagger-4">
+              <div>
+                <DiagramRenderer spec={diagram13DecisionTree} />
+                <div className="two-up-grid" style={{ marginTop: 'var(--space-3)' }}>
+                  <article className="panel reveal delay-2">
+                    <span className="panel__tag">Use trio when</span>
+                    <ul className="decision-list">
+                      <li>Multi-file features where integration matters</li>
+                      <li>Uncertain correctness — "will this actually work?"</li>
+                      <li>Medium-complexity tasks at the edge of model capability</li>
+                      <li>Broken output is expensive to debug manually</li>
+                    </ul>
+                  </article>
+                  <article className="panel reveal delay-3">
+                    <span className="panel__tag">Skip trio when</span>
+                    <ul className="decision-list">
+                      <li>Single-line fixes or simple refactors</li>
+                      <li>Dependency version bumps</li>
+                      <li>Tasks with known, verified answers</li>
+                      <li>When the overhead costs more than the risk</li>
+                    </ul>
+                  </article>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1286,20 +1270,20 @@ function App(): JSX.Element {
           data-act="6"
           data-active={activeScene === 'model-tiering'}
         >
-          <SceneIntro
-            eyebrow="Model Strategy"
-            title="Opus plans, Sonnet builds"
-            lede="Not every agent needs the most expensive model. Match model capability to role: reasoning-heavy roles get the premium model, execution roles get the fast one."
-          />
-          <div className="scene__body">
-            <div className="reveal delay-1">
-              <DiagramRenderer spec={diagram14ModelTiering} />
-            </div>
-            <div className="panel reveal delay-2">
-              <span className="panel__tag">⚠️ Industry pattern — not directly tested in Harnessa V1</span>
-              <p className="panel__body">Harnessa V1 used the same model (claude-sonnet-4) for all roles. Model tiering — using premium reasoning models for planning/evaluation and faster models for execution — is an industry pattern observed in Claude Code's coordinator model, not a validated Harnessa finding.</p>
-            </div>
-            <div className="two-up-grid">
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Model Strategy"
+              title="Opus plans, Sonnet builds"
+              lede="Not every agent needs the most expensive model. Match model capability to role: reasoning-heavy roles get the premium model, execution roles get the fast one."
+            />
+            <div className="scene__visual">
+              <div className="reveal delay-1" style={{ gridColumn: '1 / -1' }}>
+                <DiagramRenderer spec={diagram14ModelTiering} />
+              </div>
+              <article className="panel reveal delay-2" style={{ gridColumn: '1 / -1' }}>
+                <span className="panel__tag">⚠️ Industry pattern — not directly tested in Harnessa V1</span>
+                <p className="panel__body">Harnessa V1 used the same model (claude-sonnet-4) for all roles. Model tiering — using premium reasoning models for planning/evaluation and faster models for execution — is an industry pattern observed in Claude Code's coordinator model, not a validated Harnessa finding.</p>
+              </article>
               <article className="panel reveal delay-3">
                 <span className="panel__tag">Reasoning tier (Opus-class)</span>
                 <ul className="decision-list">
@@ -1329,21 +1313,12 @@ function App(): JSX.Element {
           data-act="6"
           data-active={activeScene === 'round-robin'}
         >
-          <SceneIntro
-            eyebrow="Conjecture"
-            title="Cross-model evaluation and role rotation"
-            lede="What happens when different models evaluate each other's work? The theory: disagreements between models surface blind spots that same-model evaluation misses."
-          />
-          <div className="scene__body">
-            <div className="reveal delay-1">
-              <DiagramRenderer spec={diagram15RoundRobin} />
-            </div>
-            <div className="aggregate-strip reveal delay-3">
-              <div>
-                <span className="chrome-pill">⚠️ Industry context, not Harnessa evidence</span>
-                <strong>{roundRobinCaveat}</strong>
-              </div>
-            </div>
+          <div className="scene__content">
+            <SceneIntro
+              eyebrow="Conjecture"
+              title="Cross-model evaluation and role rotation"
+              lede="What happens when different models evaluate each other's work? The theory: disagreements between models surface blind spots that same-model evaluation misses."
+            />
           </div>
         </section>
 

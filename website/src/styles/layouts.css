@@ -208,18 +208,17 @@
 }
 
 .layout-statement > .scene__content {
-  max-width: min(880px, calc(100vw - 4rem));
+  max-width: min(1100px, calc(100vw - 4rem));
   margin: 0 auto;
-  overflow-wrap: break-word;
-  word-break: break-word;
 }
 
 .layout-statement .scene__title {
-  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
   font-weight: 700;
-  line-height: 1.08;
+  line-height: 1.1;
   letter-spacing: -0.03em;
   text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .layout-statement .scene__lede {

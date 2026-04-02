@@ -355,7 +355,8 @@ function App(): JSX.Element {
         <section
           id="hero"
           ref={setSceneRef('hero')}
-          className="scene scene--hero"
+          className="scene layout-hero"
+          data-act="1"
           data-active={activeScene === 'hero'}
         >
           <div className="scene__content hero-layout">
@@ -399,7 +400,8 @@ function App(): JSX.Element {
         <section
           id="anthropic-spark"
           ref={setSceneRef('anthropic-spark')}
-          className="scene scene--content-heavy"
+          className="scene layout-editorial"
+          data-act="1"
           data-active={activeScene === 'anthropic-spark'}
         >
           <SceneIntro
@@ -448,7 +450,8 @@ function App(): JSX.Element {
         <section
           id="wall-context"
           ref={setSceneRef('wall-context')}
-          className="scene"
+          className="scene layout-split"
+          data-act="1"
           data-active={activeScene === 'wall-context'}
         >
           <SceneIntro
@@ -476,7 +479,8 @@ function App(): JSX.Element {
         <section
           id="wall-evaluation"
           ref={setSceneRef('wall-evaluation')}
-          className="scene"
+          className="scene layout-split"
+          data-act="1"
           data-active={activeScene === 'wall-evaluation'}
         >
           <SceneIntro
@@ -508,7 +512,8 @@ function App(): JSX.Element {
         <section
           id="adversarial-insight"
           ref={setSceneRef('adversarial-insight')}
-          className="scene"
+          className="scene layout-statement"
+          data-act="1"
           data-active={activeScene === 'adversarial-insight'}
         >
           <SceneIntro
@@ -545,7 +550,8 @@ function App(): JSX.Element {
         <section
           id="trio-pipeline"
           ref={setSceneRef('trio-pipeline')}
-          className="scene scene--with-diagram"
+          className="scene layout-showcase"
+          data-act="2"
           data-active={activeScene === 'trio-pipeline'}
         >
           <div className="scene__content">
@@ -563,7 +569,8 @@ function App(): JSX.Element {
         <section
           id="goodhart-boundary"
           ref={setSceneRef('goodhart-boundary')}
-          className="scene scene--with-diagram"
+          className="scene layout-compare"
+          data-act="2"
           data-active={activeScene === 'goodhart-boundary'}
         >
           <div className="scene__content">
@@ -609,7 +616,8 @@ function App(): JSX.Element {
         <section
           id="sprint-contracts"
           ref={setSceneRef('sprint-contracts')}
-          className="scene scene--with-diagram"
+          className="scene layout-showcase"
+          data-act="2"
           data-active={activeScene === 'sprint-contracts'}
         >
           <div className="scene__content">
@@ -632,7 +640,8 @@ function App(): JSX.Element {
         <section
           id="files-on-disk"
           ref={setSceneRef('files-on-disk')}
-          className="scene scene--with-diagram"
+          className="scene layout-split"
+          data-act="2"
           data-active={activeScene === 'files-on-disk'}
         >
           <div className="scene__content">
@@ -650,7 +659,8 @@ function App(): JSX.Element {
         <section
           id="telemetry-layer"
           ref={setSceneRef('telemetry-layer')}
-          className="scene scene--with-diagram"
+          className="scene layout-editorial"
+          data-act="2"
           data-active={activeScene === 'telemetry-layer'}
         >
           <div className="scene__content">
@@ -670,7 +680,8 @@ function App(): JSX.Element {
         <section
           id="karpathy-problem"
           ref={setSceneRef('karpathy-problem')}
-          className="scene scene--content-heavy"
+          className="scene layout-editorial"
+          data-act="3"
           data-active={activeScene === 'karpathy-problem'}
         >
           <SceneIntro
@@ -718,7 +729,8 @@ function App(): JSX.Element {
         <section
           id="anti-sycophancy"
           ref={setSceneRef('anti-sycophancy')}
-          className="scene"
+          className="scene layout-grid"
+          data-act="3"
           data-active={activeScene === 'anti-sycophancy'}
         >
           <SceneIntro
@@ -749,7 +761,8 @@ function App(): JSX.Element {
         <section
           id="criteria-thresholds"
           ref={setSceneRef('criteria-thresholds')}
-          className="scene"
+          className="scene layout-split"
+          data-act="3"
           data-active={activeScene === 'criteria-thresholds'}
         >
           <SceneIntro
@@ -777,7 +790,8 @@ function App(): JSX.Element {
         <section
           id="experiment-design"
           ref={setSceneRef('experiment-design')}
-          className="scene"
+          className="scene layout-statement"
+          data-act="3"
           data-active={activeScene === 'experiment-design'}
         >
           <SceneIntro
@@ -814,7 +828,8 @@ function App(): JSX.Element {
         <section
           id="benchmark-matrix"
           ref={setSceneRef('benchmark-matrix')}
-          className="scene"
+          className="scene layout-grid"
+          data-act="3"
           data-active={activeScene === 'benchmark-matrix'}
         >
           <SceneIntro
@@ -843,7 +858,8 @@ function App(): JSX.Element {
         <section
           id="headline-result"
           ref={setSceneRef('headline-result')}
-          className="scene"
+          className="scene layout-hero"
+          data-act="4"
           data-active={activeScene === 'headline-result'}
         >
           <SceneIntro
@@ -870,7 +886,8 @@ function App(): JSX.Element {
         <section
           id="full-scorecard"
           ref={setSceneRef('full-scorecard')}
-          className="scene scene--content-heavy"
+          className="scene layout-showcase"
+          data-act="4"
           data-active={activeScene === 'full-scorecard'}
         >
           <SceneIntro
@@ -912,7 +929,8 @@ function App(): JSX.Element {
         <section
           id="difficulty-classification"
           ref={setSceneRef('difficulty-classification')}
-          className="scene"
+          className="scene layout-split"
+          data-act="4"
           data-active={activeScene === 'difficulty-classification'}
         >
           <SceneIntro
@@ -943,7 +961,8 @@ function App(): JSX.Element {
         <section
           id="iteration-curve"
           ref={setSceneRef('iteration-curve')}
-          className="scene"
+          className="scene layout-showcase"
+          data-act="4"
           data-active={activeScene === 'iteration-curve'}
         >
           <SceneIntro
@@ -970,7 +989,8 @@ function App(): JSX.Element {
         <section
           id="claims-confirmed"
           ref={setSceneRef('claims-confirmed')}
-          className="scene"
+          className="scene layout-grid"
+          data-act="4"
           data-active={activeScene === 'claims-confirmed'}
         >
           <SceneIntro
@@ -998,7 +1018,8 @@ function App(): JSX.Element {
         <section
           id="claims-partial"
           ref={setSceneRef('claims-partial')}
-          className="scene scene--content-heavy"
+          className="scene layout-editorial"
+          data-act="5"
           data-active={activeScene === 'claims-partial'}
         >
           <SceneIntro
@@ -1035,7 +1056,8 @@ function App(): JSX.Element {
         <section
           id="evaluator-leniency"
           ref={setSceneRef('evaluator-leniency')}
-          className="scene scene--content-heavy"
+          className="scene layout-statement"
+          data-act="5"
           data-active={activeScene === 'evaluator-leniency'}
         >
           <SceneIntro
@@ -1071,7 +1093,8 @@ function App(): JSX.Element {
         <section
           id="industry-timeline"
           ref={setSceneRef('industry-timeline')}
-          className="scene scene--content-heavy"
+          className="scene layout-showcase"
+          data-act="5"
           data-active={activeScene === 'industry-timeline'}
         >
           <SceneIntro
@@ -1093,7 +1116,8 @@ function App(): JSX.Element {
         <section
           id="ecosystem-network"
           ref={setSceneRef('ecosystem-network')}
-          className="scene scene--content-heavy"
+          className="scene layout-showcase"
+          data-act="5"
           data-active={activeScene === 'ecosystem-network'}
         >
           <SceneIntro
@@ -1131,7 +1155,8 @@ function App(): JSX.Element {
         <section
           id="showcase-rebuild"
           ref={setSceneRef('showcase-rebuild')}
-          className="scene scene--content-heavy"
+          className="scene layout-split"
+          data-act="5"
           data-active={activeScene === 'showcase-rebuild'}
         >
           <SceneIntro
@@ -1169,7 +1194,8 @@ function App(): JSX.Element {
         <section
           id="demo-flow"
           ref={setSceneRef('demo-flow')}
-          className="scene scene--content-heavy"
+          className="scene layout-showcase"
+          data-act="6"
           data-active={activeScene === 'demo-flow'}
         >
           <SceneIntro
@@ -1217,7 +1243,8 @@ function App(): JSX.Element {
         <section
           id="decision-tree"
           ref={setSceneRef('decision-tree')}
-          className="scene scene--content-heavy"
+          className="scene layout-showcase"
+          data-act="6"
           data-active={activeScene === 'decision-tree'}
         >
           <SceneIntro
@@ -1255,7 +1282,8 @@ function App(): JSX.Element {
         <section
           id="model-tiering"
           ref={setSceneRef('model-tiering')}
-          className="scene scene--content-heavy"
+          className="scene layout-grid"
+          data-act="6"
           data-active={activeScene === 'model-tiering'}
         >
           <SceneIntro
@@ -1297,7 +1325,8 @@ function App(): JSX.Element {
         <section
           id="round-robin"
           ref={setSceneRef('round-robin')}
-          className="scene scene--content-heavy"
+          className="scene layout-statement"
+          data-act="6"
           data-active={activeScene === 'round-robin'}
         >
           <SceneIntro
@@ -1321,7 +1350,8 @@ function App(): JSX.Element {
         <section
           id="closing"
           ref={setSceneRef('closing')}
-          className="scene scene--closing"
+          className="scene layout-hero"
+          data-act="6"
           data-active={activeScene === 'closing'}
         >
           <div className="scene__content closing-layout">

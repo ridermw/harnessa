@@ -1,22 +1,63 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import './layouts.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg: #040d17;
-  --bg-alt: rgba(8, 25, 40, 0.82);
-  --panel: rgba(9, 24, 39, 0.76);
-  --panel-strong: rgba(13, 33, 53, 0.92);
-  --border: rgba(112, 186, 255, 0.2);
-  --text: #edf6ff;
-  --muted: #9cb7cf;
-  --signal-blue: #4dd6ff;
-  --signal-green: #51f5c8;
-  --signal-amber: #ffb648;
-  --signal-red: #ff6c8c;
-  --shadow: 0 18px 80px rgba(0, 0, 0, 0.35);
+  /* Backgrounds — layered, visible contrast between levels */
+  --bg: #050e18;
+  --bg-scene: #0a1929;
+  --bg-surface: rgba(15, 35, 64, 0.85);
+  --bg-raised: rgba(22, 51, 86, 0.9);
+  --border: rgba(112, 186, 255, 0.14);
+  --border-strong: rgba(112, 186, 255, 0.3);
+
+  /* Text — 3-level hierarchy */
+  --text: #e8f0f8;
+  --text-secondary: #8ba3bd;
+  --text-dim: #546b82;
+
+  /* Primary accent */
+  --accent: #00d4ff;
+  --accent-dim: rgba(0, 212, 255, 0.12);
+  --accent-glow: rgba(0, 212, 255, 0.35);
+
+  /* Per-act colors */
+  --act1: #00d4ff;   /* The Problem — cool cyan */
+  --act2: #00ff88;   /* Architecture — green */
+  --act3: #ffd000;   /* Experiment — gold */
+  --act4: #ff6b35;   /* Results — coral */
+  --act5: #c084fc;   /* Context — purple */
+  --act6: #00d4ff;   /* Takeaway — cyan */
+
+  /* Semantic */
+  --pass: #00ff88;
+  --fail: #ff4d6a;
+  --warn: #ffd000;
+
+  /* Kept for backward compat during migration */
+  --signal-blue: var(--accent);
+  --signal-green: var(--pass);
+  --signal-amber: var(--warn);
+  --signal-red: var(--fail);
+  --muted: var(--text-secondary);
+  --panel: var(--bg-surface);
+  --panel-strong: var(--bg-raised);
+  --bg-alt: var(--bg-surface);
+
+  /* Shadows */
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 18px 80px rgba(0, 0, 0, 0.5);
+
+  /* Motion tokens */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 300ms;
+  --dur-normal: 500ms;
+  --dur-slow: 800ms;
+  --stagger: 80ms;
 }
 
 * {
@@ -25,10 +66,7 @@
 
 html {
   scroll-behavior: smooth;
-  background:
-    radial-gradient(circle at top, rgba(77, 214, 255, 0.18), transparent 32%),
-    radial-gradient(circle at right, rgba(255, 182, 72, 0.14), transparent 28%),
-    var(--bg);
+  background: var(--bg);
 }
 
 body {
@@ -58,11 +96,11 @@ a {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(77, 214, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(77, 214, 255, 0.08) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: radial-gradient(circle at center, black 50%, transparent 85%);
-  opacity: 0.35;
+    linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 75%);
+  opacity: 0.3;
   pointer-events: none;
 }
 
@@ -258,10 +296,33 @@ a {
 }
 
 .scene {
+  position: relative;
   min-height: 80svh;
   padding: 6rem 2rem 4rem;
   display: flex;
   align-items: center;
+}
+
+/* Per-act color theming */
+.scene[data-act="1"] { --act-color: var(--act1); }
+.scene[data-act="2"] { --act-color: var(--act2); }
+.scene[data-act="3"] { --act-color: var(--act3); }
+.scene[data-act="4"] { --act-color: var(--act4); }
+.scene[data-act="5"] { --act-color: var(--act5); }
+.scene[data-act="6"] { --act-color: var(--act6); }
+
+/* Scene background — subtle gradient tied to act color */
+.scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 80% 60% at 20% 40%,
+    color-mix(in srgb, var(--act-color, var(--accent)) 8%, transparent),
+    transparent
+  );
+  pointer-events: none;
 }
 
 .scene--content-heavy {
@@ -301,19 +362,21 @@ a {
 
 .scene__eyebrow {
   display: inline-flex;
-  margin-bottom: 0.6rem;
-  color: var(--signal-blue);
+  margin-bottom: 0.75rem;
+  color: var(--act-color, var(--accent));
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .scene__title {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(1.6rem, 2.4vw, 2.4rem);
-  line-height: 1.1;
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.08;
   letter-spacing: -0.03em;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -321,10 +384,10 @@ a {
 
 .scene__lede {
   max-width: 48rem;
-  margin: 0.75rem 0 0;
-  color: var(--muted);
-  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
-  line-height: 1.65;
+  margin: 1rem 0 0;
+  color: var(--text);
+  font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+  line-height: 1.7;
 }
 
 /* Split layout: text left, diagram right */
@@ -355,12 +418,15 @@ a {
 }
 
 .scene--hero .scene__title {
-  font-size: clamp(2.2rem, 3.5vw, 3.4rem);
-  line-height: 1.05;
+  font-size: clamp(2.8rem, 4.5vw, 4.2rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
 }
 
 .scene--closing .scene__title {
-  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-size: clamp(2.4rem, 3.8vw, 3.4rem);
+  font-weight: 700;
   line-height: 1.05;
 }
 
@@ -407,9 +473,7 @@ a {
 .state-card,
 .appendix__panel {
   border: 1px solid var(--border);
-  background:
-    linear-gradient(180deg, rgba(14, 31, 48, 0.86), rgba(7, 18, 29, 0.92)),
-    var(--panel);
+  background: var(--bg-surface);
   box-shadow: var(--shadow);
 }
 
@@ -422,7 +486,9 @@ a {
   display: block;
   margin-top: 0.45rem;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.7rem;
+  font-size: 2.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric-card small {
@@ -447,7 +513,7 @@ a {
 .quote-panel__text,
 .telemetry-note,
 .decision-footnote {
-  color: var(--muted);
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
@@ -1038,8 +1104,8 @@ a {
 
 .reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 500ms ease, transform 500ms ease;
+  transform: translateY(24px);
+  transition: opacity var(--dur-normal) var(--ease-out), transform var(--dur-normal) var(--ease-out);
 }
 
 .scene[data-active='true'] .reveal {
@@ -1287,6 +1353,26 @@ a {
   body {
     color: #111;
   }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%      { box-shadow: 0 0 24px 4px var(--accent-glow); }
 }
 
 @keyframes pulse-node {

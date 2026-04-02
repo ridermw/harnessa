@@ -97,10 +97,10 @@
 
 .layout-showcase .scene__visual {
   flex: 1;
+  min-height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0;
 }
 
 .layout-showcase .scene__visual > * {
@@ -208,14 +208,16 @@
 }
 
 .layout-statement > .scene__content {
-  max-width: 880px;
+  max-width: min(880px, calc(100vw - 4rem));
   margin: 0 auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .layout-statement .scene__title {
-  font-size: clamp(2.4rem, 4vw, 3.8rem);
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.08;
   letter-spacing: -0.03em;
   text-wrap: balance;
 }
